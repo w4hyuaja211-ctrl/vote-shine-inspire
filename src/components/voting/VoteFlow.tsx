@@ -6,40 +6,35 @@ import { Check, ChevronLeft, ChevronRight, Award, Sparkles, User } from "lucide-
 
 interface Category { id: string; name: string; description: string | null; display_order: number; }
 interface Candidate { id: string; name: string; role_type: string; photo_url: string | null; }
-interface CandCat { candidate_id: string; category_id: string; }
-
 interface Props { code: string; onDone: () => void; }
 
 export default function VoteFlow({ code, onDone }: Props) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [links, setLinks] = useState<CandCat[]>([]);
   const [selections, setSelections] = useState<Record<string, string>>({});
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     (async () => {
-      const [cats, cands, lks] = await Promise.all([
+      const [cats, cands] = await Promise.all([
         supabase.from("categories").select("*").order("display_order"),
         supabase.from("candidates").select("*").order("name"),
-        supabase.from("candidate_categories").select("*"),
       ]);
       setCategories(cats.data || []);
       setCandidates(cands.data || []);
-      setLinks(lks.data || []);
       setLoading(false);
     })();
   }, []);
 
   const currentCat = categories[step];
-  const eligibleIds = useMemo(
-    () => new Set(links.filter((l) => l.category_id === currentCat?.id).map((l) => l.candidate_id)),
-    [links, currentCat]
+  const eligible = useMemo(
+    () => candidates.filter((c) => c.name.toLowerCase().includes(search.toLowerCase())),
+    [candidates, search]
   );
-  const eligible = candidates.filter((c) => eligibleIds.has(c.id));
 
   const select = (cid: string) => {
     if (!currentCat) return;
