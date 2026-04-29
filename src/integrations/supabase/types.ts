@@ -14,39 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      candidate_categories: {
-        Row: {
-          candidate_id: string
-          category_id: string
-          id: string
-        }
-        Insert: {
-          candidate_id: string
-          category_id: string
-          id?: string
-        }
-        Update: {
-          candidate_id?: string
-          category_id?: string
-          id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "candidate_categories_candidate_id_fkey"
-            columns: ["candidate_id"]
-            isOneToOne: false
-            referencedRelation: "candidates"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "candidate_categories_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       candidates: {
         Row: {
           bio: string | null
