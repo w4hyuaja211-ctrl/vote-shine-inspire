@@ -89,27 +89,56 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Categories preview */}
-      <section className="container mx-auto px-6 py-20">
-        <div className="text-center mb-12">
+      {/* Petunjuk Memilih */}
+      <section className="container mx-auto px-6 py-16">
+        <div className="text-center mb-10">
           <h2 className="font-display text-4xl md:text-5xl font-semibold mb-3">
-            10 Kategori <span className="gradient-text-gold">Penghargaan</span>
+            Petunjuk <span className="gradient-text-gold">Memilih</span>
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Setiap pemilih memberikan satu suara di setiap kategori untuk satu nominasi favoritnya.
+            Ikuti langkah-langkah berikut untuk memberikan suara Anda secara sah.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <ol className="max-w-3xl mx-auto space-y-3 mb-12">
+          {STEPS.map((s, i) => (
+            <li key={i} className="flex gap-4 p-4 bg-card border border-border rounded-xl shadow-soft">
+              <div className="w-9 h-9 rounded-full bg-gold text-accent-foreground font-display text-lg font-semibold flex items-center justify-center shrink-0">
+                {i + 1}
+              </div>
+              <div>
+                <h3 className="font-semibold mb-1">{s.title}</h3>
+                <p className="text-sm text-muted-foreground">{s.desc}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+
+        <div className="text-center mb-8">
+          <h2 className="font-display text-3xl md:text-4xl font-semibold mb-3">
+            10 Kategori <span className="gradient-text-gold">Penghargaan</span>
+          </h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            Berikut deskripsi tiap kategori. Anda memilih satu nominasi favorit di setiap kategori.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-5xl mx-auto">
           {CATEGORIES.map((c, i) => (
             <div
               key={c.name}
-              className="group relative p-5 rounded-xl bg-card-elegant border border-border shadow-soft hover:shadow-elegant transition-smooth hover:-translate-y-1"
-              style={{ animationDelay: `${i * 50}ms` }}
+              className="flex gap-4 p-5 rounded-xl bg-card-elegant border border-border shadow-soft hover:shadow-elegant transition-smooth"
             >
-              <Award className="w-6 h-6 text-accent mb-3" />
-              <h3 className="font-display text-xl font-semibold text-foreground">{c.name}</h3>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{c.desc}</p>
+              <div className="w-10 h-10 rounded-lg bg-accent/15 text-accent flex items-center justify-center shrink-0">
+                <Award className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-baseline gap-2 mb-1">
+                  <span className="text-xs font-mono text-muted-foreground">#{i + 1}</span>
+                  <h3 className="font-display text-xl font-semibold text-foreground">{c.name}</h3>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">{c.desc}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -127,17 +156,25 @@ const Index = () => {
   );
 };
 
+const STEPS = [
+  { title: "Dapatkan kode voting Anda", desc: "Kode unik diberikan oleh panitia. Setiap pemilih hanya menerima satu kode dan kode tersebut hanya berlaku sekali pakai." },
+  { title: "Masukkan kode di kolom di atas", desc: "Ketik kode dengan tepat (huruf besar/kecil tidak masalah) lalu tekan tombol panah untuk memulai." },
+  { title: "Pilih satu nominasi di setiap dari 10 kategori", desc: "Untuk setiap kategori, pilih SATU guru atau karyawan yang menurut Anda paling layak. Gunakan kolom pencarian untuk menemukan nama dengan cepat." },
+  { title: "Periksa kembali pilihan Anda", desc: "Anda dapat menekan \"Sebelumnya\" untuk meninjau atau mengganti pilihan sebelum mengirim." },
+  { title: "Kirim semua suara", desc: "Setelah seluruh 10 kategori terisi, klik \"Kirim Semua Suara\". Suara akan tercatat secara anonim dan kode otomatis tidak bisa dipakai lagi." },
+];
+
 const CATEGORIES = [
-  { name: "Ter-Inspiratif", desc: "Memberi motivasi & keteladanan" },
-  { name: "Ter-Sabar", desc: "Tenang menghadapi siswa" },
-  { name: "Ter-Ramah", desc: "Humble & murah senyum" },
-  { name: "Ter-Inovatif", desc: "Selalu menciptakan ide baru" },
-  { name: "Ter-Fashionable", desc: "Penampilan rapi & modis" },
-  { name: "Ter-Favorit", desc: "Paling disukai siswa" },
-  { name: "Ter-Humoris", desc: "Suasana penuh canda tawa" },
-  { name: "Ter-Disiplin", desc: "Konsisten & tepat waktu" },
-  { name: "Ter-Islami", desc: "Mencerminkan nilai Islam" },
-  { name: "Ter-Tegas", desc: "Tegas tanpa menakutkan" },
+  { name: "Ter-Inspiratif", desc: "Mampu memberi motivasi, semangat, dan keteladanan kepada siswa serta rekan kerja." },
+  { name: "Ter-Sabar", desc: "Tetap tenang dan sabar dalam menghadapi berbagai karakter dan tingkah laku siswa." },
+  { name: "Ter-Ramah", desc: "Humble, murah senyum, dan menciptakan suasana yang nyaman bagi siapa pun di sekolah." },
+  { name: "Ter-Inovatif", desc: "Sering menciptakan ide baru, metode baru, dan gagasan kreatif untuk kemajuan sekolah." },
+  { name: "Ter-Fashionable", desc: "Memiliki gaya mengajar dan penampilan yang menarik, rapi, dan modis namun tetap sopan." },
+  { name: "Ter-Favorit", desc: "Paling disukai dan dirindukan siswa karena kedekatan, perhatian, dan cara mengajarnya." },
+  { name: "Ter-Humoris", desc: "Mampu mencairkan suasana dengan humor sehat sehingga belajar terasa menyenangkan." },
+  { name: "Ter-Disiplin", desc: "Memiliki tanggung jawab profesional tinggi, terutama dalam kehadiran dan ketepatan waktu." },
+  { name: "Ter-Islami", desc: "Senantiasa mencerminkan nilai-nilai ajaran Islam dalam sikap, ucapan, maupun tindakan." },
+  { name: "Ter-Tegas", desc: "Mampu menegakkan aturan dan disiplin secara konsisten tanpa bersikap keras atau menakutkan." },
 ];
 
 export default Index;
