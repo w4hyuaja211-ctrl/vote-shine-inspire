@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Trash2, Edit, User, Search } from "lucide-react";
+import { Plus, Trash2, Edit, User, Search, Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface Candidate { id: string; name: string; role_type: string; photo_url: string | null; bio: string | null; }
@@ -16,6 +16,23 @@ export default function CandidatesManager() {
   const [editing, setEditing] = useState<Candidate | null>(null);
   const [form, setForm] = useState({ name: "", role_type: "guru", photo_url: "", bio: "" });
   const [q, setQ] = useState("");
+  const [uploading, setUploading] = useState(false);
+
+  const uploadPhoto = async (file: File) => {
+    if (file.size > 5 * 1024 * 1024) return toast.error("Ukuran foto maksimal 5MB");
+    setUploading(true);
+    const ext = file.name.split(".").pop() || "jpg";
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from("candidate-photos").upload(path, file, { upsert: false });
+    if (error) {
+      setUploading(false);
+      return toast.error(error.message);
+    }
+    const { data } = supabase.storage.from("candidate-photos").getPublicUrl(path);
+    setForm((f) => ({ ...f, photo_url: data.publicUrl }));
+    setUploading(false);
+    toast.success("Foto terunggah");
+  };
 
   const load = async () => {
     const { data } = await supabase.from("candidates").select("*").order("name");
@@ -121,8 +138,48 @@ export default function CandidatesManager() {
               </select>
             </div>
             <div>
-              <Label>URL Foto (opsional)</Label>
-              <Input value={form.photo_url} onChange={(e) => setForm({ ...form, photo_url: e.target.value })} placeholder="https://..." />
+              <Label>Foto</Label>
+              <div className="flex items-center gap-3 mt-1">
+                <div className="w-20 h-20 rounded-lg bg-muted overflow-hidden flex items-center justify-center shrink-0 border border-border">
+                  {form.photo_url ? (
+                    <img src={form.photo_url} alt="preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-8 h-8 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="flex-1 space-y-2">
+                  <label className="inline-flex items-center justify-center gap-2 h-9 px-3 rounded-md border border-input bg-background hover:bg-muted cursor-pointer text-sm w-full">
+                    {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    {uploading ? "Mengunggah..." : (form.photo_url ? "Ganti foto" : "Unggah foto")}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploading}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) uploadPhoto(f);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                  {form.photo_url && (
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, photo_url: "" })}
+                      className="text-xs text-destructive hover:underline"
+                    >
+                      Hapus foto
+                    </button>
+                  )}
+                </div>
+              </div>
+              <Input
+                value={form.photo_url}
+                onChange={(e) => setForm({ ...form, photo_url: e.target.value })}
+                placeholder="atau tempel URL foto..."
+                className="mt-2 text-xs"
+              />
             </div>
             <div>
               <Label>Bio singkat (opsional)</Label>

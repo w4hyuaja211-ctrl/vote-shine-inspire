@@ -65,7 +65,7 @@ const Index = () => {
             Apresiasi tertinggi untuk pendidik dan karyawan terbaik. Pilih satu nominasi di setiap dari 10 kategori.
           </p>
 
-          <div className="max-w-md mx-auto bg-card/95 backdrop-blur p-6 rounded-2xl shadow-elegant animate-fade-up">
+          <div id="kode-voting" className="max-w-md mx-auto bg-card/95 backdrop-blur p-6 rounded-2xl shadow-elegant animate-fade-up scroll-mt-20">
             <label className="text-sm font-medium text-card-foreground block mb-2 text-left">
               Masukkan Kode Voting Anda
             </label>
@@ -141,6 +141,16 @@ const Index = () => {
               </div>
             </div>
           ))}
+        </div>
+
+        <div className="text-center mt-12">
+          <Button
+            variant="gold"
+            size="lg"
+            onClick={() => document.getElementById("kode-voting")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+          >
+            Saya Siap, Mulai Voting <ArrowRight className="w-5 h-5 ml-2" />
+          </Button>
         </div>
       </section>
 
