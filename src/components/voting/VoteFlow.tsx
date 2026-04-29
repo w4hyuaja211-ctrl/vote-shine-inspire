@@ -134,9 +134,24 @@ export default function VoteFlow({ code, onDone }: Props) {
           )}
         </div>
 
+        <div className="max-w-md mx-auto mb-6">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="🔍 Cari nama nominasi..."
+            className="w-full h-11 px-4 rounded-lg border border-input bg-card text-foreground"
+          />
+          {selections[currentCat.id] && (
+            <p className="text-xs text-center mt-2 text-accent-foreground bg-accent/20 rounded px-2 py-1">
+              ✓ Terpilih: <b>{candidates.find((c) => c.id === selections[currentCat.id])?.name}</b>
+            </p>
+          )}
+        </div>
+
         {eligible.length === 0 ? (
           <div className="text-center p-12 rounded-xl bg-card border border-border">
-            <p className="text-muted-foreground">Belum ada nominasi untuk kategori ini.</p>
+            <p className="text-muted-foreground">Tidak ada nominasi yang cocok.</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
