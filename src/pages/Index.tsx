@@ -142,6 +142,16 @@ const Index = () => {
             </div>
           ))}
         </div>
+
+        <div className="text-center mt-12">
+          <Button
+            variant="gold"
+            size="lg"
+            onClick={() => document.getElementById("kode-voting")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+          >
+            Saya Siap, Mulai Voting <ArrowRight className="w-5 h-5 ml-2" />
+          </Button>
+        </div>
       </section>
 
       <footer className="border-t border-border py-8 mt-12">
