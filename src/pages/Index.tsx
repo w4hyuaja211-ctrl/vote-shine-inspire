@@ -49,7 +49,7 @@ const Index = () => {
       {/* Hero */}
       <header className="relative overflow-hidden bg-hero text-primary-foreground">
         <div className="absolute inset-0 opacity-30">
-          <img src={heroImg} alt="" className="h-full w-full object-cover" />
+          <img src={heroImg} alt="" className="h-full w-full object-cover" fetchPriority="high" decoding="async" />
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
         <div className="relative container mx-auto px-6 py-20 md:py-32 text-center">
