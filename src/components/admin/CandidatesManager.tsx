@@ -81,12 +81,12 @@ export default function CandidatesManager() {
     <div>
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-4">
         <h2 className="font-display text-2xl">Nominasi ({candidates.length})</h2>
-        <div className="flex gap-2">
-          <div className="relative">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="relative w-full sm:w-auto">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari nama..." className="pl-9 w-56" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari nama..." className="pl-9 w-full sm:w-56" />
           </div>
-          <Button onClick={openNew} variant="hero"><Plus className="w-4 h-4 mr-1" /> Tambah</Button>
+          <Button onClick={openNew} variant="hero" className="w-full sm:w-auto"><Plus className="w-4 h-4 mr-1" /> Tambah</Button>
         </div>
       </div>
 
