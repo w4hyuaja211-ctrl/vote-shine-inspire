@@ -9,26 +9,13 @@ import TokensManager from "@/components/admin/TokensManager";
 import ResultsView from "@/components/admin/ResultsView";
 import VotersView from "@/components/admin/VotersView";
 
-const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+async function checkAdminRole() {
+  const { data, error } = await (supabase as any).rpc("current_user_admin_status");
 
-async function checkAdminRole(userId: string) {
-  let lastError = "";
+  if (error) return { isAdmin: false, email: "", error: error.message };
 
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    const { data, error } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .eq("role", "admin")
-      .maybeSingle();
-
-    if (!error) return { isAdmin: data?.role === "admin", error: "" };
-
-    lastError = error.message;
-    await wait(700 * (attempt + 1));
-  }
-
-  return { isAdmin: false, error: lastError || "Gagal memeriksa role admin." };
+  const row = Array.isArray(data) ? data[0] : data;
+  return { isAdmin: Boolean(row?.is_admin), email: row?.user_email || "", error: "" };
 }
 
 export default function AdminDashboard() {
@@ -46,16 +33,18 @@ export default function AdminDashboard() {
         nav("/admin/auth", { replace: true });
         return;
       }
-      setEmail(session.user.email || "");
-      const { isAdmin: hasAdminAccess, error } = await checkAdminRole(session.user.id);
+      const { isAdmin: hasAdminAccess, email: accountEmail, error } = await checkAdminRole();
       if (!mounted) return;
+      setEmail(accountEmail || session.user.email || "");
       setIsAdmin(hasAdminAccess);
       setAccessError(error);
       setChecking(false);
     };
 
     supabase.auth.getSession().then(({ data }) => check(data.session));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => check(session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      if (!session) nav("/admin/auth", { replace: true });
+    });
     return () => { mounted = false; sub.subscription.unsubscribe(); };
   }, [nav]);
 
@@ -74,7 +63,7 @@ export default function AdminDashboard() {
         <div className="max-w-md text-center bg-card p-8 rounded-2xl shadow-elegant border border-border">
           <h2 className="font-display text-3xl mb-3">Sedang Memeriksa Ulang</h2>
           <p className="text-muted-foreground mb-6">
-            Backend sedang menyiapkan akses admin. Silakan muat ulang halaman ini sebentar lagi.
+            Pemeriksaan admin gagal. Silakan muat ulang halaman ini atau login ulang.
           </p>
           <Button onClick={() => window.location.reload()} variant="hero">Muat Ulang</Button>
         </div>
@@ -102,23 +91,23 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-hero text-primary-foreground shadow-elegant">
-        <div className="container mx-auto px-6 py-5 flex items-center justify-between">
+        <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
             <Sparkles className="w-6 h-6 text-accent" />
-            <div>
+            <div className="min-w-0">
               <h1 className="font-display text-2xl font-semibold">Panel Admin</h1>
-              <p className="text-xs opacity-75">{email}</p>
+              <p className="text-xs opacity-75 truncate">{email}</p>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={logout} className="bg-transparent border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
+          <Button variant="outline" size="sm" onClick={logout} className="w-full sm:w-auto bg-transparent border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
             <LogOut className="w-4 h-4 mr-1" /> Keluar
           </Button>
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-8">
+      <main className="container mx-auto px-4 sm:px-6 py-5 sm:py-8">
         <Tabs defaultValue="results">
-          <TabsList className="mb-6 flex-wrap h-auto">
+          <TabsList className="mb-6 grid h-auto w-full grid-cols-2 gap-1 sm:inline-flex sm:w-auto sm:flex-wrap">
             <TabsTrigger value="results">Hasil Voting</TabsTrigger>
             <TabsTrigger value="voters">Rekap Pemilih</TabsTrigger>
             <TabsTrigger value="candidates">Nominasi</TabsTrigger>
