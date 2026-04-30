@@ -67,7 +67,7 @@ export default function ResultsView() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <Stat icon={<Trophy className="w-5 h-5" />} label="Total Suara" value={totalVotes} />
         <Stat icon={<Award className="w-5 h-5" />} label="Pemilih Aktif" value={tokensUsed} accent />
         <Stat icon={<Medal className="w-5 h-5" />} label="Kategori" value={cats.length} />
@@ -78,11 +78,11 @@ export default function ResultsView() {
           const max = Math.max(1, ...cat.items.map((i) => i.votes));
           const winner = cat.items[0];
           return (
-            <div key={cat.id} className="bg-card border border-border rounded-xl p-5 shadow-soft">
-              <div className="flex items-center justify-between mb-4">
+            <div key={cat.id} className="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-soft">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                 <h3 className="font-display text-xl font-semibold">{cat.name}</h3>
                 {winner && winner.votes > 0 && (
-                  <span className="text-xs px-2 py-1 rounded-full bg-gold text-accent-foreground font-semibold">
+                  <span className="text-xs px-2 py-1 rounded-full bg-gold text-accent-foreground font-semibold w-fit">
                     🏆 {winner.candidate_name}
                   </span>
                 )}
