@@ -167,6 +167,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      current_user_admin_status: {
+        Args: never
+        Returns: {
+          is_admin: boolean
+          user_email: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -174,6 +181,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_current_user_admin: { Args: never; Returns: boolean }
       submit_votes: { Args: { _code: string; _votes: Json }; Returns: Json }
       validate_token: {
         Args: { _code: string }
