@@ -57,6 +57,14 @@ export default function VoteFlow({ code, onDone }: Props) {
   };
 
   const submit = async () => {
+    if (status.phase === "closed") {
+      toast.error("Voting sudah ditutup");
+      return;
+    }
+    if (status.phase === "before") {
+      toast.error("Voting belum dibuka");
+      return;
+    }
     if (Object.keys(selections).length !== categories.length) {
       toast.error("Lengkapi semua kategori dulu");
       return;
