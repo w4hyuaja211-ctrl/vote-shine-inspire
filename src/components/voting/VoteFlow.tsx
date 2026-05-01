@@ -177,7 +177,7 @@ export default function VoteFlow({ code, onDone }: Props) {
                       <Check className="w-4 h-4" strokeWidth={3} />
                     </div>
                   )}
-                  <div className="aspect-square rounded-lg bg-muted overflow-hidden mb-3 flex items-center justify-center">
+                  <div className="aspect-[9/16] rounded-lg bg-muted overflow-hidden mb-3 flex items-center justify-center">
                     {c.photo_url ? (
                       <img src={c.photo_url} alt={c.name} className="w-full h-full object-cover" loading="lazy" />
                     ) : (
