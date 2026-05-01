@@ -77,6 +77,9 @@ const Index = () => {
           </p>
 
           <div id="kode-voting" className="max-w-md mx-auto bg-card/95 backdrop-blur p-4 sm:p-6 rounded-2xl shadow-elegant animate-fade-up scroll-mt-20">
+            <div className="mb-3 text-left">
+              <VotingStatusBanner />
+            </div>
             <label htmlFor="voting-code" className="text-sm font-semibold text-card-foreground block mb-2 text-left">
               Masukkan Kode Voting Anda
             </label>
