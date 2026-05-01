@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Check, ChevronLeft, ChevronRight, Award, Sparkles, User } from "lucide-react";
+import VotingStatusBanner from "@/components/VotingStatusBanner";
+import { useVotingStatus } from "@/hooks/use-voting-status";
 
 interface Category { id: string; name: string; description: string | null; display_order: number; }
 interface Candidate { id: string; name: string; role_type: string; photo_url: string | null; }
