@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Search, ChevronDown, ChevronRight, CheckCircle2, Clock } from "lucide-react";
 
-interface Token { id: string; code: string; label: string | null; used: boolean; used_at: string | null; created_at: string; }
+interface Token { id: string; code: string; label: string | null; used: boolean; used_at: string | null; created_at: string; ip_address: string | null; device_type: string | null; user_agent: string | null; }
 interface Vote { token_id: string; category_id: string; candidate_id: string; }
 interface Cat { id: string; name: string; display_order: number; }
 interface Cand { id: string; name: string; }
@@ -114,6 +114,26 @@ export default function VotersView() {
                   </button>
                   {isOpen && t.used && (
                     <div className="px-3 sm:px-4 pb-4 sm:pl-11 bg-muted/30">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3 text-xs">
+                        {t.device_type && (
+                          <div className="bg-background rounded px-3 py-2 border border-border">
+                            <span className="text-muted-foreground">Perangkat:</span>
+                            <span className="ml-2 font-medium">{t.device_type}</span>
+                          </div>
+                        )}
+                        {t.ip_address && (
+                          <div className="bg-background rounded px-3 py-2 border border-border">
+                            <span className="text-muted-foreground">IP Address:</span>
+                            <span className="ml-2 font-medium">{t.ip_address}</span>
+                          </div>
+                        )}
+                      </div>
+                      {t.user_agent && (
+                        <div className="bg-background rounded px-3 py-2 border border-border mb-3 text-xs">
+                          <span className="text-muted-foreground">User Agent:</span>
+                          <span className="ml-2 break-all">{t.user_agent}</span>
+                        </div>
+                      )}
                       <p className="text-xs text-muted-foreground mb-2">
                         Memilih pada {t.used_at ? new Date(t.used_at).toLocaleString("id-ID") : "-"}
                       </p>
