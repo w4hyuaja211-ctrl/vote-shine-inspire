@@ -46,6 +46,10 @@ export default function ResultsView() {
       supabase.from("vote_tokens").select("used"),
     ]);
 
+    console.log("=== DEBUG ResultsView ===");
+    console.log("cats:", cats.data);
+    console.log("results.data (public_results):", results.data);
+
     setCategories(cats.data || []);
     setRows((results.data || []) as Row[]);
     setTokensUsed((tokens.data || []).filter((t) => t.used).length);
@@ -67,6 +71,13 @@ export default function ResultsView() {
     const categoryRows = rows.filter((r) => String(r.category_id) === String(cat.id));
     const totalVotesInCategory = categoryRows.reduce((sum, r) => sum + Number(r.votes), 0);
     const sortedItems = categoryRows.sort((a, b) => Number(b.votes) - Number(a.votes));
+    
+    console.log(`Category "${cat.name}":`);
+    console.log("  cat.id:", cat.id, String(cat.id));
+    console.log("  categoryRows.length:", categoryRows.length);
+    console.log("  categoryRows:", categoryRows);
+    console.log("  totalVotesInCategory:", totalVotesInCategory);
+    
     return {
       id: cat.id,
       name: cat.name,
@@ -113,49 +124,45 @@ export default function ResultsView() {
                   </span>
                 )}
               </div>
-              {!hasVotes ? (
-                <p className="text-sm text-muted-foreground italic">Belum ada suara</p>
-              ) : (
-                <div className="space-y-3">
-                  {g.items.slice(0, 5).map((item, idx) => {
-                    const v = Number(item.votes);
-                    const pct = hasVotes ? Math.round((v / g.totalVotes) * 100) : 0;
-                    return (
-                      <div key={item.candidate_id} className="flex gap-3">
-                        <div className="w-12 h-12 rounded-lg bg-muted overflow-hidden shrink-0 flex items-center justify-center">
-                          {item.photo_url ? (
-                            <img src={item.photo_url} alt={item.candidate_name} className="w-full h-full object-cover" loading="lazy" />
-                          ) : (
-                            <User className="w-6 h-6 text-muted-foreground" />
-                          )}
+              <div className="space-y-3">
+                {g.items.slice(0, 5).map((item, idx) => {
+                  const v = Number(item.votes);
+                  const pct = hasVotes ? Math.round((v / g.totalVotes) * 100) : 0;
+                  return (
+                    <div key={item.candidate_id} className="flex gap-3">
+                      <div className="w-12 h-12 rounded-lg bg-muted overflow-hidden shrink-0 flex items-center justify-center">
+                        {item.photo_url ? (
+                          <img src={item.photo_url} alt={item.candidate_name} className="w-full h-full object-cover" loading="lazy" />
+                        ) : (
+                          <User className="w-6 h-6 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex justify-between text-sm mb-1 gap-2">
+                          <span className={`truncate ${idx === 0 && hasVotes ? "font-semibold" : ""}`}>
+                            <span className="text-muted-foreground mr-1">{idx + 1}.</span>
+                            {item.candidate_name}
+                          </span>
+                          <span className="font-mono tabular-nums shrink-0">
+                            {v} {hasVotes ? `(${pct}%)` : ""}
+                          </span>
                         </div>
-                        <div className="flex-1">
-                          <div className="flex justify-between text-sm mb-1 gap-2">
-                            <span className={`truncate ${idx === 0 ? "font-semibold" : ""}`}>
-                              <span className="text-muted-foreground mr-1">{idx + 1}.</span>
-                              {item.candidate_name}
-                            </span>
-                            <span className="font-mono tabular-nums shrink-0">
-                              {v} ({pct}%)
-                            </span>
-                          </div>
-                          <div className="h-2 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className={`h-full transition-all duration-700 ${idx === 0 ? "bg-gold" : "bg-primary/40"}`}
-                              style={{ width: `${(v / max) * 100}%` }}
-                            />
-                          </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-700 ${idx === 0 && hasVotes ? "bg-gold" : "bg-primary/40"}`}
+                            style={{ width: `${max > 0 ? (v / max) * 100 : 0}%` }}
+                          />
                         </div>
                       </div>
-                    );
-                  })}
-                  {g.items.length > 5 && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      +{g.items.length - 5} kandidat lainnya
-                    </p>
-                  )}
-                </div>
-              )}
+                    </div>
+                  );
+                })}
+                {g.items.length > 5 && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    +{g.items.length - 5} kandidat lainnya
+                  </p>
+                )}
+              </div>
             </div>
           );
         })}
