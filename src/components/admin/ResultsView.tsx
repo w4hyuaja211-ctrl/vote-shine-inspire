@@ -1,137 +1,159 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Award, Trophy, Medal, User } from "lucide-react";
+import { Award, Trophy, Medal, User, RefreshCw } from "lucide-react";
 
-interface Candidate { id: string; name: string; role_type: string; photo_url: string | null; }
-interface Row { category_id: string; category_name: string; candidate_id: string; candidate_name: string; role_type: string; photo_url: string | null; votes: number; }
+interface Row {
+  category_id: string;
+  category_name: string;
+  category_order: number;
+  candidate_id: string;
+  candidate_name: string;
+  role_type: string;
+  photo_url: string | null;
+  votes: number;
+}
+
+interface CategoryGroup {
+  id: string;
+  name: string;
+  order: number;
+  items: Row[];
+  totalVotes: number;
+}
+
+const REFRESH_MS = 10000;
 
 export default function ResultsView() {
   const [rows, setRows] = useState<Row[]>([]);
-  const [totalVotes, setTotalVotes] = useState(0);
   const [tokensUsed, setTokensUsed] = useState(0);
   const [totalTokens, setTotalTokens] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const timerRef = useRef<number | null>(null);
 
-  const load = async () => {
-    const [votes, cats, cands, tokens] = await Promise.all([
-      supabase.from("votes").select("category_id, candidate_id"),
-      supabase.from("categories").select("id, name, display_order").order("display_order"),
-      supabase.from("candidates").select("id, name, role_type, photo_url"),
+  const load = async (silent = false) => {
+    if (!silent) setRefreshing(true);
+    const [results, tokens] = await Promise.all([
+      (supabase as any).rpc("public_results"),
       supabase.from("vote_tokens").select("used"),
     ]);
 
-    const catMap = new Map((cats.data || []).map((c) => [c.id, c]));
-    const candMap = new Map((cands.data || []).map((c) => [c.id, c]));
-    const tally = new Map<string, Row>();
-
-    (votes.data || []).forEach((v) => {
-      const key = `${v.category_id}|${v.candidate_id}`;
-      const existing = tally.get(key);
-      if (existing) { existing.votes++; return; }
-      const cat = catMap.get(v.category_id);
-      const cand = candMap.get(v.candidate_id) as Candidate | undefined;
-      if (!cat || !cand) return;
-      tally.set(key, {
-        category_id: v.category_id, category_name: cat.name,
-        candidate_id: v.candidate_id, candidate_name: cand.name,
-        role_type: cand.role_type, photo_url: cand.photo_url, votes: 1,
-      });
-    });
-
-    // Ensure categories with no votes still appear
-    (cats.data || []).forEach((cat) => {
-      const has = Array.from(tally.values()).some((r) => r.category_id === cat.id);
-      if (!has) {
-        tally.set(`${cat.id}|empty`, {
-          category_id: cat.id, category_name: cat.name,
-          candidate_id: "", candidate_name: "", role_type: "", photo_url: null, votes: 0,
-        });
-      }
-    });
-
-    setRows(Array.from(tally.values()));
-    setTotalVotes((votes.data || []).length);
+    setRows((results.data || []) as Row[]);
     setTokensUsed((tokens.data || []).filter((t) => t.used).length);
     setTotalTokens((tokens.data || []).length);
     setLoading(false);
+    setRefreshing(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    timerRef.current = window.setInterval(() => load(true), REFRESH_MS);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, []);
 
   if (loading) return <p className="text-center py-12">Memuat...</p>;
 
   // Group by category
-  const cats = Array.from(new Set(rows.map((r) => r.category_id)))
-    .map((id) => {
-      const items = rows.filter((r) => r.category_id === id && r.candidate_id).sort((a, b) => b.votes - a.votes);
-      const name = rows.find((r) => r.category_id === id)?.category_name || "";
-      const totalVotesInCategory = items.reduce((sum, i) => sum + i.votes, 0);
-      return { id, name, items, totalVotesInCategory };
+  const groups: CategoryGroup[] = (() => {
+    const map = new Map<string, CategoryGroup>();
+    rows.forEach((r) => {
+      const g = map.get(r.category_id);
+      if (g) {
+        g.items.push(r);
+        g.totalVotes += Number(r.votes);
+      } else {
+        map.set(r.category_id, {
+          id: r.category_id,
+          name: r.category_name,
+          order: r.category_order,
+          items: [r],
+          totalVotes: Number(r.votes),
+        });
+      }
     });
+    return Array.from(map.values())
+      .map((g) => ({ ...g, items: g.items.sort((a, b) => Number(b.votes) - Number(a.votes)) }))
+      .sort((a, b) => a.order - b.order);
+  })();
 
+  const totalVotes = rows.reduce((s, r) => s + Number(r.votes), 0);
   const participationPercentage = totalTokens > 0 ? Math.round((tokensUsed / totalTokens) * 100) : 0;
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground flex items-center gap-2">
+          <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+          Pembaruan otomatis setiap {REFRESH_MS / 1000} detik
+        </div>
+      </div>
+      
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 sm:gap-4">
         <Stat icon={<Trophy className="w-5 h-5" />} label="Total Suara" value={totalVotes} />
         <Stat icon={<Award className="w-5 h-5" />} label="Pemilih Aktif" value={tokensUsed} accent />
-        <Stat icon={<Medal className="w-5 h-5" />} label="Kategori" value={cats.length} />
+        <Stat icon={<Medal className="w-5 h-5" />} label="Kategori" value={groups.length} />
         <Stat icon={<User className="w-5 h-5" />} label="Partisipasi" value={`${participationPercentage}%`} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {cats.map((cat) => {
-          const max = Math.max(1, ...cat.items.map((i) => i.votes));
-          const winner = cat.items[0];
+        {groups.map((g, gi) => {
+          const max = Math.max(1, ...g.items.map((i) => Number(i.votes)));
+          const winner = g.items[0];
+          const hasVotes = g.totalVotes > 0;
           return (
-            <div key={cat.id} className="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-soft">
+            <div key={g.id} className="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-soft">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                 <div>
-                  <h3 className="font-display text-xl font-semibold">{cat.name}</h3>
-                  <p className="text-xs text-muted-foreground">{cat.totalVotesInCategory} suara masuk</p>
+                  <h3 className="font-display text-xl font-semibold">{g.name}</h3>
+                  <p className="text-xs text-muted-foreground">{g.totalVotes} suara masuk</p>
                 </div>
-                {winner && winner.votes > 0 && (
+                {hasVotes && winner && (
                   <span className="text-xs px-2 py-1 rounded-full bg-gold text-accent-foreground font-semibold w-fit">
                     🏆 {winner.candidate_name}
                   </span>
                 )}
               </div>
-              {cat.items.length === 0 ? (
+              {!hasVotes ? (
                 <p className="text-sm text-muted-foreground italic">Belum ada suara</p>
               ) : (
                 <div className="space-y-3">
-                  {cat.items.map((item, idx) => {
-                    const percentage = cat.totalVotesInCategory > 0 
-                      ? Math.round((item.votes / cat.totalVotesInCategory) * 100) 
-                      : 0;
+                  {g.items.slice(0, 5).map((item, idx) => {
+                    const v = Number(item.votes);
+                    const pct = hasVotes ? Math.round((v / g.totalVotes) * 100) : 0;
                     return (
-                    <div key={item.candidate_id} className="flex gap-3">
-                      <div className="w-12 h-12 rounded-lg bg-muted overflow-hidden shrink-0 flex items-center justify-center">
-                        {item.photo_url ? (
-                          <img src={item.photo_url} alt={item.candidate_name} className="w-full h-full object-cover" />
-                        ) : (
-                          <User className="w-6 h-6 text-muted-foreground" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className={idx === 0 ? "font-semibold" : ""}>
-                            {idx + 1}. {item.candidate_name}
-                          </span>
-                          <span className="font-mono">
-                            {item.votes} ({percentage}%)
-                          </span>
+                      <div key={item.candidate_id} className="flex gap-3">
+                        <div className="w-12 h-12 rounded-lg bg-muted overflow-hidden shrink-0 flex items-center justify-center">
+                          {item.photo_url ? (
+                            <img src={item.photo_url} alt={item.candidate_name} className="w-full h-full object-cover" loading="lazy" />
+                          ) : (
+                            <User className="w-6 h-6 text-muted-foreground" />
+                          )}
                         </div>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className={idx === 0 ? "h-full bg-gold" : "h-full bg-primary/40"}
-                            style={{ width: `${(item.votes / max) * 100}%` }}
-                          />
+                        <div className="flex-1">
+                          <div className="flex justify-between text-sm mb-1 gap-2">
+                            <span className={`truncate ${idx === 0 ? "font-semibold" : ""}`}>
+                              <span className="text-muted-foreground mr-1">{idx + 1}.</span>
+                              {item.candidate_name}
+                            </span>
+                            <span className="font-mono tabular-nums shrink-0">
+                              {v} ({pct}%)
+                            </span>
+                          </div>
+                          <div className="h-2 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className={`h-full transition-all duration-700 ${idx === 0 ? "bg-gold" : "bg-primary/40"}`}
+                              style={{ width: `${(v / max) * 100}%` }}
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )})}
+                    );
+                  })}
+                  {g.items.length > 5 && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      +{g.items.length - 5} kandidat lainnya
+                    </p>
+                  )}
                 </div>
               )}
             </div>
