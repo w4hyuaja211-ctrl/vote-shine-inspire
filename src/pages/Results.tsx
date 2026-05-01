@@ -35,9 +35,12 @@ async function checkAdminRole() {
   return { isAdmin: Boolean(row?.is_admin), email: row?.user_email || "", error: "" };
 }
 
+interface Cat { id: string; name: string; display_order: number; }
+
 export default function Results() {
   const nav = useNavigate();
   const [rows, setRows] = useState<Row[]>([]);
+  const [cats, setCats] = useState<Cat[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -50,11 +53,15 @@ export default function Results() {
 
   const load = async (silent = false) => {
     if (!silent) setRefreshing(true);
-    const { data, error } = await (supabase as any).rpc("public_results");
-    if (error) {
-      setError(error.message || "Gagal memuat hasil");
+    const [results, categories] = await Promise.all([
+      (supabase as any).rpc("public_results"),
+      supabase.from("categories").select("id, name, display_order").order("display_order"),
+    ]);
+    if (results.error) {
+      setError(results.error.message || "Gagal memuat hasil");
     } else {
-      setRows((data || []) as Row[]);
+      setRows((results.data || []) as Row[]);
+      setCats(categories.data || []);
       setError("");
       setLastUpdated(new Date());
     }
@@ -134,28 +141,19 @@ export default function Results() {
     );
   }
 
-  // Group by category
-  const groups: CategoryGroup[] = (() => {
-    const map = new Map<string, CategoryGroup>();
-    rows.forEach((r) => {
-      const g = map.get(r.category_id);
-      if (g) {
-        g.items.push(r);
-        g.totalVotes += Number(r.votes);
-      } else {
-        map.set(r.category_id, {
-          id: r.category_id,
-          name: r.category_name,
-          order: r.category_order,
-          items: [r],
-          totalVotes: Number(r.votes),
-        });
-      }
-    });
-    return Array.from(map.values())
-      .map((g) => ({ ...g, items: g.items.sort((a, b) => Number(b.votes) - Number(a.votes)) }))
-      .sort((a, b) => a.order - b.order);
-  })();
+  // Group by category using all categories from database
+  const groups: CategoryGroup[] = cats.map((cat) => {
+    const categoryRows = rows.filter((r) => r.category_name === cat.name);
+    const totalVotesInCategory = categoryRows.reduce((sum, r) => sum + Number(r.votes), 0);
+    const sortedItems = categoryRows.sort((a, b) => Number(b.votes) - Number(a.votes));
+    return {
+      id: cat.id,
+      name: cat.name,
+      order: cat.display_order,
+      items: sortedItems,
+      totalVotes: totalVotesInCategory,
+    };
+  });
 
   const totalSuara = rows.reduce((s, r) => s + Number(r.votes), 0);
 
