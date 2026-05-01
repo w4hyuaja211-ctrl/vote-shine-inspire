@@ -46,35 +46,6 @@ export default function ResultsView() {
       supabase.from("vote_tokens").select("used"),
     ]);
 
-    console.log("=== DEBUG ResultsView ===");
-    console.log("cats:", cats.data);
-    console.log("results.data.length:", results.data?.length);
-    // Show first 15 results to check category ids
-    console.log("First 15 results.data items (category_id, category_name, candidate_id, candidate_name, votes):", 
-      (results.data || []).slice(0,15).map(item => ({
-        category_id: item.category_id,
-        category_name: item.category_name,
-        candidate_id: item.candidate_id,
-        candidate_name: item.candidate_name,
-        votes: item.votes
-      }))
-    );
-    // Group results by category name
-    const resultsByCatName = new Map();
-    (results.data || []).forEach(item => {
-      if (!resultsByCatName.has(item.category_name)) {
-        resultsByCatName.set(item.category_name, { 
-          category_id: item.category_id,
-          count: 0,
-          totalVotes: 0
-        });
-      }
-      const data = resultsByCatName.get(item.category_name);
-      data.count++;
-      data.totalVotes += Number(item.votes);
-    });
-    console.log("Results grouped by category name (category_id, count, totalVotes):", Object.fromEntries(resultsByCatName));
-
     setCategories(cats.data || []);
     setRows((results.data || []) as Row[]);
     setTokensUsed((tokens.data || []).filter((t) => t.used).length);
@@ -93,15 +64,9 @@ export default function ResultsView() {
 
   // Group by category using all categories from database
   const groups: CategoryGroup[] = categories.map((cat) => {
-    const categoryRows = rows.filter((r) => String(r.category_id) === String(cat.id));
+    const categoryRows = rows.filter((r) => r.category_name === cat.name);
     const totalVotesInCategory = categoryRows.reduce((sum, r) => sum + Number(r.votes), 0);
     const sortedItems = categoryRows.sort((a, b) => Number(b.votes) - Number(a.votes));
-    
-    console.log(`Category "${cat.name}":`);
-    console.log("  cat.id:", cat.id, String(cat.id));
-    console.log("  categoryRows.length:", categoryRows.length);
-    console.log("  categoryRows:", categoryRows);
-    console.log("  totalVotesInCategory:", totalVotesInCategory);
     
     return {
       id: cat.id,
