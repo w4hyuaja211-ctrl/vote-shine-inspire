@@ -52,33 +52,37 @@ const Index = () => {
           <img src={heroImg} alt="" className="h-full w-full object-cover" fetchPriority="high" decoding="async" />
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
-        <div className="relative container mx-auto px-6 py-20 md:py-32 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-accent/40 bg-accent/10 backdrop-blur-sm mb-6 animate-fade-up">
-            <Sparkles className="w-4 h-4 text-accent" />
-            <span className="text-sm font-medium tracking-wide">Penghargaan Tahunan Sekolah</span>
+        <div className="relative container mx-auto px-4 sm:px-6 py-12 sm:py-20 md:py-32 text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full border border-accent/40 bg-accent/10 backdrop-blur-sm mb-4 sm:mb-6 animate-fade-up">
+            <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent" />
+            <span className="text-[11px] sm:text-sm font-medium tracking-wide">SMA Muhammadiyah 1 Palembang · Hardiknas 2026</span>
           </div>
-          <h1 className="font-display text-5xl md:text-7xl font-semibold mb-4 animate-fade-up">
+          <h1 className="font-display text-3xl sm:text-5xl md:text-7xl font-semibold mb-3 sm:mb-4 animate-fade-up leading-tight">
             Anugerah <span className="gradient-text-gold">Guru & Karyawan</span>
             <br />Ter-Inspiratif
           </h1>
-          <p className="text-lg md:text-xl opacity-90 max-w-2xl mx-auto mb-10 animate-fade-up">
-            Apresiasi tertinggi untuk pendidik dan karyawan terbaik. Pilih satu nominasi di setiap dari 10 kategori.
+          <p className="text-sm sm:text-lg md:text-xl opacity-90 max-w-2xl mx-auto mb-6 sm:mb-10 animate-fade-up px-2">
+            Apresiasi untuk pendidik dan karyawan terbaik. Pilih satu nominasi di setiap dari 10 kategori.
           </p>
 
-          <div id="kode-voting" className="max-w-md mx-auto bg-card/95 backdrop-blur p-6 rounded-2xl shadow-elegant animate-fade-up scroll-mt-20">
-            <label className="text-sm font-medium text-card-foreground block mb-2 text-left">
+          <div id="kode-voting" className="max-w-md mx-auto bg-card/95 backdrop-blur p-4 sm:p-6 rounded-2xl shadow-elegant animate-fade-up scroll-mt-20">
+            <label htmlFor="voting-code" className="text-sm font-semibold text-card-foreground block mb-2 text-left">
               Masukkan Kode Voting Anda
             </label>
             <div className="flex gap-2">
               <Input
+                id="voting-code"
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
-                placeholder="Contoh: ABC123"
-                className="text-center font-mono tracking-widest text-lg uppercase"
+                placeholder="ABC123"
+                className="text-center font-mono tracking-widest text-lg sm:text-xl uppercase h-12 text-foreground placeholder:text-muted-foreground/60 bg-background border-2 border-input focus-visible:border-accent"
                 maxLength={20}
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
                 onKeyDown={(e) => e.key === "Enter" && handleStart()}
               />
-              <Button onClick={handleStart} disabled={loading} variant="hero" size="lg">
+              <Button onClick={handleStart} disabled={loading} variant="hero" size="lg" className="h-12 px-4 shrink-0">
                 {loading ? "..." : <ArrowRight className="w-5 h-5" />}
               </Button>
             </div>
@@ -90,63 +94,64 @@ const Index = () => {
       </header>
 
       {/* Petunjuk Memilih */}
-      <section className="container mx-auto px-6 py-16">
-        <div className="text-center mb-10">
-          <h2 className="font-display text-4xl md:text-5xl font-semibold mb-3">
+      <section className="container mx-auto px-4 sm:px-6 py-10 sm:py-16">
+        <div className="text-center mb-6 sm:mb-10">
+          <h2 className="font-display text-2xl sm:text-4xl md:text-5xl font-semibold mb-2 sm:mb-3">
             Petunjuk <span className="gradient-text-gold">Memilih</span>
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Ikuti langkah-langkah berikut untuk memberikan suara Anda secara sah.
+          <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
+            Ikuti langkah berikut untuk memberikan suara Anda.
           </p>
         </div>
 
-        <ol className="max-w-3xl mx-auto space-y-3 mb-12">
+        <ol className="max-w-3xl mx-auto space-y-2.5 sm:space-y-3 mb-10 sm:mb-12">
           {STEPS.map((s, i) => (
-            <li key={i} className="flex gap-4 p-4 bg-card border border-border rounded-xl shadow-soft">
-              <div className="w-9 h-9 rounded-full bg-gold text-accent-foreground font-display text-lg font-semibold flex items-center justify-center shrink-0">
+            <li key={i} className="flex gap-3 sm:gap-4 p-3 sm:p-4 bg-card border border-border rounded-xl shadow-soft">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gold text-accent-foreground font-display text-base sm:text-lg font-semibold flex items-center justify-center shrink-0">
                 {i + 1}
               </div>
-              <div>
-                <h3 className="font-semibold mb-1">{s.title}</h3>
-                <p className="text-sm text-muted-foreground">{s.desc}</p>
+              <div className="min-w-0">
+                <h3 className="font-semibold text-sm sm:text-base mb-1">{s.title}</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
               </div>
             </li>
           ))}
         </ol>
 
-        <div className="text-center mb-8">
-          <h2 className="font-display text-3xl md:text-4xl font-semibold mb-3">
+        <div className="text-center mb-6 sm:mb-8">
+          <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-semibold mb-2 sm:mb-3">
             10 Kategori <span className="gradient-text-gold">Penghargaan</span>
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Berikut deskripsi tiap kategori. Anda memilih satu nominasi favorit di setiap kategori.
+          <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
+            Pilih satu nominasi favorit di setiap kategori.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 max-w-5xl mx-auto">
           {CATEGORIES.map((c, i) => (
             <div
               key={c.name}
-              className="flex gap-4 p-5 rounded-xl bg-card-elegant border border-border shadow-soft hover:shadow-elegant transition-smooth"
+              className="flex gap-3 sm:gap-4 p-4 sm:p-5 rounded-xl bg-card-elegant border border-border shadow-soft hover:shadow-elegant transition-smooth"
             >
-              <div className="w-10 h-10 rounded-lg bg-accent/15 text-accent flex items-center justify-center shrink-0">
-                <Award className="w-5 h-5" />
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-accent/15 text-accent flex items-center justify-center shrink-0">
+                <Award className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-baseline gap-2 mb-1">
                   <span className="text-xs font-mono text-muted-foreground">#{i + 1}</span>
-                  <h3 className="font-display text-xl font-semibold text-foreground">{c.name}</h3>
+                  <h3 className="font-display text-base sm:text-xl font-semibold text-foreground">{c.name}</h3>
                 </div>
-                <p className="text-sm text-muted-foreground leading-relaxed">{c.desc}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{c.desc}</p>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="text-center mt-12">
+        <div className="text-center mt-8 sm:mt-12">
           <Button
             variant="gold"
             size="lg"
+            className="w-full sm:w-auto"
             onClick={() => document.getElementById("kode-voting")?.scrollIntoView({ behavior: "smooth", block: "center" })}
           >
             Saya Siap, Mulai Voting <ArrowRight className="w-5 h-5 ml-2" />
@@ -154,9 +159,12 @@ const Index = () => {
         </div>
       </section>
 
-      <footer className="border-t border-border py-8 mt-12">
-        <div className="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} Anugerah Guru & Karyawan Ter-Inspiratif</p>
+      <footer className="border-t border-border py-6 sm:py-8 mt-8 sm:mt-12">
+        <div className="container mx-auto px-4 sm:px-6 flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground text-center md:text-left">
+          <div>
+            <p className="font-medium">SMA Muhammadiyah 1 Palembang</p>
+            <p className="opacity-80">Anugerah Guru & Karyawan Ter-Inspiratif · Hardiknas 2026</p>
+          </div>
           <Link to="/admin" className="inline-flex items-center gap-2 hover:text-accent transition-smooth">
             <ShieldCheck className="w-4 h-4" /> Panel Admin
           </Link>
