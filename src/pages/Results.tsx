@@ -5,6 +5,19 @@ import { Award, Trophy, RefreshCw, ArrowLeft, Crown, User } from "lucide-react";
 import VotingStatusBanner from "@/components/VotingStatusBanner";
 import { Button } from "@/components/ui/button";
 
+interface Category {
+  id: string;
+  name: string;
+  display_order: number;
+}
+
+interface Candidate {
+  id: string;
+  name: string;
+  role_type: string;
+  photo_url: string | null;
+}
+
 interface Row {
   category_id: string;
   category_name: string;
@@ -35,12 +48,9 @@ async function checkAdminRole() {
   return { isAdmin: Boolean(row?.is_admin), email: row?.user_email || "", error: "" };
 }
 
-interface Cat { id: string; name: string; display_order: number; }
-
 export default function Results() {
   const nav = useNavigate();
-  const [rows, setRows] = useState<Row[]>([]);
-  const [cats, setCats] = useState<Cat[]>([]);
+  const [groups, setGroups] = useState<CategoryGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -53,15 +63,86 @@ export default function Results() {
 
   const load = async (silent = false) => {
     if (!silent) setRefreshing(true);
-    const [results, categories] = await Promise.all([
-      (supabase as any).rpc("public_results"),
+    const [cats, cands] = await Promise.all([
       supabase.from("categories").select("id, name, display_order").order("display_order"),
+      supabase.from("candidates").select("id, name, role_type, photo_url"),
     ]);
-    if (results.error) {
-      setError(results.error.message || "Gagal memuat hasil");
+    
+    // Fetch all votes with pagination
+    const allVotes: any[] = [];
+    let page = 0;
+    const pageSize = 1000;
+    let hasMore = true;
+
+    while (hasMore) {
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+      const { data, error } = await supabase
+        .from("votes")
+        .select("id, category_id, candidate_id")
+        .range(from, to);
+      
+      if (error) {
+        console.error("Error fetching votes page:", error);
+        break;
+      }
+      
+      if (data && data.length > 0) {
+        allVotes.push(...data);
+        if (data.length < pageSize) {
+          hasMore = false;
+        } else {
+          page++;
+        }
+      } else {
+        hasMore = false;
+      }
+    }
+
+    if (cats.error || cands.error) {
+      setError("Gagal memuat hasil");
     } else {
-      setRows((results.data || []) as Row[]);
-      setCats(categories.data || []);
+      const categories = cats.data || [];
+      const candidates = cands.data || [];
+      const votes = allVotes;
+
+      // Count votes manually
+      const voteCountMap = new Map<string, number>();
+      votes.forEach(v => {
+        const key = `${v.category_id}-${v.candidate_id}`;
+        voteCountMap.set(key, (voteCountMap.get(key) || 0) + 1);
+      });
+
+      // Build all category groups using ALL categories and candidates
+      const newGroups: CategoryGroup[] = categories.map(cat => {
+        const items: Row[] = candidates.map(cand => {
+          const key = `${cat.id}-${cand.id}`;
+          const voteCount = voteCountMap.get(key) || 0;
+          return {
+            category_id: cat.id,
+            category_name: cat.name,
+            category_order: cat.display_order,
+            candidate_id: cand.id,
+            candidate_name: cand.name,
+            role_type: cand.role_type,
+            photo_url: cand.photo_url,
+            votes: voteCount,
+          };
+        });
+
+        const sortedItems = items.sort((a, b) => b.votes - a.votes);
+        const totalVotes = sortedItems.reduce((sum, r) => sum + r.votes, 0);
+
+        return {
+          id: cat.id,
+          name: cat.name,
+          order: cat.display_order,
+          items: sortedItems,
+          totalVotes,
+        };
+      });
+
+      setGroups(newGroups);
       setError("");
       setLastUpdated(new Date());
     }
@@ -141,21 +222,7 @@ export default function Results() {
     );
   }
 
-  // Group by category using all categories from database
-  const groups: CategoryGroup[] = cats.map((cat) => {
-    const categoryRows = rows.filter((r) => r.category_name === cat.name);
-    const totalVotesInCategory = categoryRows.reduce((sum, r) => sum + Number(r.votes), 0);
-    const sortedItems = categoryRows.sort((a, b) => Number(b.votes) - Number(a.votes));
-    return {
-      id: cat.id,
-      name: cat.name,
-      order: cat.display_order,
-      items: sortedItems,
-      totalVotes: totalVotesInCategory,
-    };
-  });
-
-  const totalSuara = rows.reduce((s, r) => s + Number(r.votes), 0);
+  const totalSuara = groups.reduce((sum, g) => sum + g.totalVotes, 0);
 
   return (
     <div className="min-h-screen bg-background islamic-pattern pb-12">
