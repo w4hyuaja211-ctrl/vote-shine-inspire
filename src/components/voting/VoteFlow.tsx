@@ -143,7 +143,9 @@ export default function VoteFlow({ code, onDone }: Props) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="🔍 Cari nama nominasi..."
-            className="w-full h-11 px-4 rounded-lg border border-input bg-card text-foreground"
+            autoCorrect="off"
+            spellCheck={false}
+            className="w-full h-12 px-4 rounded-lg border-2 border-input bg-background text-foreground text-base placeholder:text-muted-foreground/60 focus:outline-none focus:border-accent"
           />
           {selections[currentCat.id] && (
             <p className="text-xs text-center mt-2 text-accent-foreground bg-accent/20 rounded px-2 py-1">
