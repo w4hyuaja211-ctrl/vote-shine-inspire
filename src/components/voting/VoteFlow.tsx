@@ -295,11 +295,20 @@ export default function VoteFlow({ code, onDone }: Props) {
           </Button>
 
           {isLast ? (
-            <Button onClick={submit} disabled={submitting} variant="gold" size="lg">
+            <Button 
+              onClick={submit} 
+              disabled={submitting || Object.keys(selections).length !== categories.length} 
+              variant="gold" 
+              size="lg"
+            >
               {submitting ? "Mengirim..." : "Kirim Semua Suara"}
             </Button>
           ) : (
-            <Button onClick={next} variant="hero">
+            <Button 
+              onClick={next} 
+              disabled={!selections[currentCat.id]} 
+              variant="hero"
+            >
               Berikutnya <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           )}
