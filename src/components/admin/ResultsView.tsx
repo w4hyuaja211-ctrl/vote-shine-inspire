@@ -64,7 +64,7 @@ export default function ResultsView() {
 
   // Group by category using all categories from database
   const groups: CategoryGroup[] = categories.map((cat) => {
-    const categoryRows = rows.filter((r) => r.category_id === cat.id);
+    const categoryRows = rows.filter((r) => String(r.category_id) === String(cat.id));
     const totalVotesInCategory = categoryRows.reduce((sum, r) => sum + Number(r.votes), 0);
     const sortedItems = categoryRows.sort((a, b) => Number(b.votes) - Number(a.votes));
     return {
