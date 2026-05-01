@@ -8,6 +8,13 @@ interface Category {
   display_order: number;
 }
 
+interface Candidate {
+  id: string;
+  name: string;
+  role_type: string;
+  photo_url: string | null;
+}
+
 interface Row {
   category_id: string;
   category_name: string;
@@ -30,8 +37,7 @@ interface CategoryGroup {
 const REFRESH_MS = 10000;
 
 export default function ResultsView() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [rows, setRows] = useState<Row[]>([]);
+  const [groups, setGroups] = useState<CategoryGroup[]>([]);
   const [tokensUsed, setTokensUsed] = useState(0);
   const [totalTokens, setTotalTokens] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -40,14 +46,93 @@ export default function ResultsView() {
 
   const load = async (silent = false) => {
     if (!silent) setRefreshing(true);
-    const [cats, results, tokens] = await Promise.all([
+    
+    const [cats, cands, tokens] = await Promise.all([
       supabase.from("categories").select("id, name, display_order").order("display_order"),
-      (supabase as any).rpc("public_results"),
+      supabase.from("candidates").select("id, name, role_type, photo_url"),
       supabase.from("vote_tokens").select("used"),
     ]);
 
-    setCategories(cats.data || []);
-    setRows((results.data || []) as Row[]);
+    // Fetch all votes with pagination
+    const allVotes: any[] = [];
+    let page = 0;
+    const pageSize = 1000;
+    let hasMore = true;
+
+    while (hasMore) {
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+      const { data, error } = await supabase
+        .from("votes")
+        .select("id, category_id, candidate_id")
+        .range(from, to);
+      
+      if (error) {
+        console.error("Error fetching votes page:", error);
+        break;
+      }
+      
+      if (data && data.length > 0) {
+        allVotes.push(...data);
+        if (data.length < pageSize) {
+          hasMore = false;
+        } else {
+          page++;
+        }
+      } else {
+        hasMore = false;
+      }
+    }
+
+    const categories = cats.data || [];
+    const candidates = cands.data || [];
+    const votes = allVotes;
+
+    console.log("=== DEBUG LOAD ===");
+    console.log("1. Total votes loaded:", votes.length);
+    console.log("2. All categories:", categories.map(c => ({ id: c.id, name: c.name })));
+    const votesByCat = new Map<string, number>();
+    votes.forEach(v => votesByCat.set(v.category_id, (votesByCat.get(v.category_id) || 0) + 1));
+    console.log("3. Votes grouped by category:", Object.fromEntries(votesByCat));
+    console.log("4. Votes for Ter-Ramah (id fa771136-2f7b-4e56-aa1e-b1f26b5c2f2b):", votes.filter(v => v.category_id === "fa771136-2f7b-4e56-aa1e-b1f26b5c2f2b"));
+
+    // Count votes manually
+    const voteCountMap = new Map<string, number>();
+    votes.forEach(v => {
+      const key = `${v.category_id}-${v.candidate_id}`;
+      voteCountMap.set(key, (voteCountMap.get(key) || 0) + 1);
+    });
+
+    // Build all category groups using ALL categories and candidates
+    const newGroups: CategoryGroup[] = categories.map(cat => {
+      const items: Row[] = candidates.map(cand => {
+        const key = `${cat.id}-${cand.id}`;
+        const voteCount = voteCountMap.get(key) || 0;
+        return {
+          category_id: cat.id,
+          category_name: cat.name,
+          category_order: cat.display_order,
+          candidate_id: cand.id,
+          candidate_name: cand.name,
+          role_type: cand.role_type,
+          photo_url: cand.photo_url,
+          votes: voteCount,
+        };
+      });
+
+      const sortedItems = items.sort((a, b) => b.votes - a.votes);
+      const totalVotes = sortedItems.reduce((sum, r) => sum + r.votes, 0);
+
+      return {
+        id: cat.id,
+        name: cat.name,
+        order: cat.display_order,
+        items: sortedItems,
+        totalVotes,
+      };
+    });
+
+    setGroups(newGroups);
     setTokensUsed((tokens.data || []).filter((t) => t.used).length);
     setTotalTokens((tokens.data || []).length);
     setLoading(false);
@@ -62,22 +147,7 @@ export default function ResultsView() {
 
   if (loading) return <p className="text-center py-12">Memuat...</p>;
 
-  // Group by category using all categories from database
-  const groups: CategoryGroup[] = categories.map((cat) => {
-    const categoryRows = rows.filter((r) => r.category_name === cat.name);
-    const totalVotesInCategory = categoryRows.reduce((sum, r) => sum + Number(r.votes), 0);
-    const sortedItems = categoryRows.sort((a, b) => Number(b.votes) - Number(a.votes));
-    
-    return {
-      id: cat.id,
-      name: cat.name,
-      order: cat.display_order,
-      items: sortedItems,
-      totalVotes: totalVotesInCategory,
-    };
-  });
-
-  const totalVotes = rows.reduce((s, r) => s + Number(r.votes), 0);
+  const totalVotes = groups.reduce((sum, g) => sum + g.totalVotes, 0);
   const participationPercentage = totalTokens > 0 ? Math.round((tokensUsed / totalTokens) * 100) : 0;
 
   return (
