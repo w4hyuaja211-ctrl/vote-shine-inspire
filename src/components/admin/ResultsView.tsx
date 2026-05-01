@@ -2,6 +2,12 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Award, Trophy, Medal, User, RefreshCw } from "lucide-react";
 
+interface Category {
+  id: string;
+  name: string;
+  display_order: number;
+}
+
 interface Row {
   category_id: string;
   category_name: string;
@@ -24,6 +30,7 @@ interface CategoryGroup {
 const REFRESH_MS = 10000;
 
 export default function ResultsView() {
+  const [categories, setCategories] = useState<Category[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
   const [tokensUsed, setTokensUsed] = useState(0);
   const [totalTokens, setTotalTokens] = useState(0);
@@ -33,11 +40,13 @@ export default function ResultsView() {
 
   const load = async (silent = false) => {
     if (!silent) setRefreshing(true);
-    const [results, tokens] = await Promise.all([
+    const [cats, results, tokens] = await Promise.all([
+      supabase.from("categories").select("id, name, display_order").order("display_order"),
       (supabase as any).rpc("public_results"),
       supabase.from("vote_tokens").select("used"),
     ]);
 
+    setCategories(cats.data || []);
     setRows((results.data || []) as Row[]);
     setTokensUsed((tokens.data || []).filter((t) => t.used).length);
     setTotalTokens((tokens.data || []).length);
@@ -53,28 +62,19 @@ export default function ResultsView() {
 
   if (loading) return <p className="text-center py-12">Memuat...</p>;
 
-  // Group by category
-  const groups: CategoryGroup[] = (() => {
-    const map = new Map<string, CategoryGroup>();
-    rows.forEach((r) => {
-      const g = map.get(r.category_id);
-      if (g) {
-        g.items.push(r);
-        g.totalVotes += Number(r.votes);
-      } else {
-        map.set(r.category_id, {
-          id: r.category_id,
-          name: r.category_name,
-          order: r.category_order,
-          items: [r],
-          totalVotes: Number(r.votes),
-        });
-      }
-    });
-    return Array.from(map.values())
-      .map((g) => ({ ...g, items: g.items.sort((a, b) => Number(b.votes) - Number(a.votes)) }))
-      .sort((a, b) => a.order - b.order);
-  })();
+  // Group by category using all categories from database
+  const groups: CategoryGroup[] = categories.map((cat) => {
+    const categoryRows = rows.filter((r) => r.category_id === cat.id);
+    const totalVotesInCategory = categoryRows.reduce((sum, r) => sum + Number(r.votes), 0);
+    const sortedItems = categoryRows.sort((a, b) => Number(b.votes) - Number(a.votes));
+    return {
+      id: cat.id,
+      name: cat.name,
+      order: cat.display_order,
+      items: sortedItems,
+      totalVotes: totalVotesInCategory,
+    };
+  });
 
   const totalVotes = rows.reduce((s, r) => s + Number(r.votes), 0);
   const participationPercentage = totalTokens > 0 ? Math.round((tokensUsed / totalTokens) * 100) : 0;
