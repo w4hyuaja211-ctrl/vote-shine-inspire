@@ -22,7 +22,7 @@ export default function VotersView() {
     (async () => {
       const [t, v, c, cd] = await Promise.all([
         supabase.from("vote_tokens").select("*").order("created_at", { ascending: false }),
-        supabase.from("votes").select("token_id, category_id, candidate_id"),
+        supabase.from("votes").select("token_id, category_id, candidate_id").range(0, 1000000),
         supabase.from("categories").select("id, name, display_order").order("display_order"),
         supabase.from("candidates").select("id, name"),
       ]);
