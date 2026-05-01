@@ -33,14 +33,23 @@ export default function VoteFlow({ code, onDone }: Props) {
   const [pendingCandidate, setPendingCandidate] = useState<Candidate | null>(null);
   const status = useVotingStatus();
 
+  const shuffleArray = <T,>(array: T[]): T[] => {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+  };
+
   useEffect(() => {
     (async () => {
       const [cats, cands] = await Promise.all([
         supabase.from("categories").select("*").order("display_order"),
-        supabase.from("candidates").select("*").order("name"),
+        supabase.from("candidates").select("*"),
       ]);
       setCategories(cats.data || []);
-      setCandidates(cands.data || []);
+      setCandidates(shuffleArray(cands.data || []));
       setLoading(false);
     })();
   }, []);
@@ -167,7 +176,7 @@ export default function VoteFlow({ code, onDone }: Props) {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-accent" />
-                <span className="text-sm font-medium">Kategori {step + 1} / {categories.length}</span>
+                <span className="text-sm font-medium">{currentCat.name} ({step + 1} / {categories.length})</span>
               </div>
               <span className="text-xs opacity-75">{completedCount} dari {categories.length} terpilih ({Math.round(progressPercentage)}%)</span>
             </div>
@@ -234,11 +243,11 @@ export default function VoteFlow({ code, onDone }: Props) {
                       <Check className="w-4 h-4" strokeWidth={3} />
                     </div>
                   )}
-                  <div className="aspect-[9/16] rounded-lg bg-muted overflow-hidden mb-3 flex items-center justify-center">
+                  <div className="aspect-[3/4] rounded-lg bg-muted overflow-hidden mb-3 flex items-center justify-center">
                     {c.photo_url ? (
                       <img src={c.photo_url} alt={c.name} className="w-full h-full object-cover" loading="lazy" />
                     ) : (
-                      <User className="w-12 h-12 text-muted-foreground" />
+                      <User className="w-10 h-10 text-muted-foreground" />
                     )}
                   </div>
                   <h3 className="font-display text-lg font-semibold leading-tight">{c.name}</h3>
@@ -270,5 +279,6 @@ export default function VoteFlow({ code, onDone }: Props) {
         </div>
       </div>
     </div>
+    </>
   );
 }
