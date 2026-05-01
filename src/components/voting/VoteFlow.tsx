@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Check, ChevronLeft, ChevronRight, Award, Sparkles, User } from "lucide-react";
 import VotingStatusBanner from "@/components/VotingStatusBanner";
@@ -19,6 +29,8 @@ export default function VoteFlow({ code, onDone }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [search, setSearch] = useState("");
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [pendingCandidate, setPendingCandidate] = useState<Candidate | null>(null);
   const status = useVotingStatus();
 
   useEffect(() => {
@@ -40,8 +52,23 @@ export default function VoteFlow({ code, onDone }: Props) {
   );
 
   const select = (cid: string) => {
-    if (!currentCat) return;
-    setSelections((s) => ({ ...s, [currentCat.id]: cid }));
+    const candidate = candidates.find((c) => c.id === cid);
+    if (!currentCat || !candidate) return;
+    setPendingCandidate(candidate);
+    setConfirmDialogOpen(true);
+  };
+
+  const confirmSelection = () => {
+    if (!currentCat || !pendingCandidate) return;
+    setSelections((s) => ({ ...s, [currentCat.id]: pendingCandidate.id }));
+    setConfirmDialogOpen(false);
+    setPendingCandidate(null);
+    if (step < categories.length - 1) {
+      setTimeout(() => {
+        setStep(step + 1);
+        setSearch("");
+      }, 300);
+    }
   };
 
   const next = () => {
@@ -115,30 +142,46 @@ export default function VoteFlow({ code, onDone }: Props) {
 
   const isLast = step === categories.length - 1;
   const completedCount = Object.keys(selections).length;
+  const progressPercentage = (completedCount / categories.length) * 100;
 
   return (
-    <div className="min-h-screen bg-background islamic-pattern">
-      {/* Top bar */}
-      <div className="bg-hero text-primary-foreground sticky top-0 z-10 shadow-elegant">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-accent" />
-              <span className="text-sm font-medium">Kategori {step + 1} / {categories.length}</span>
+    <>
+      <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Konfirmasi Pilihan</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin memilih <strong>{pendingCandidate?.name}</strong> untuk kategori <strong>{currentCat?.name}</strong>?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmSelection}>Ya, Pilih</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <div className="min-h-screen bg-background islamic-pattern">
+        {/* Top bar */}
+        <div className="bg-hero text-primary-foreground sticky top-0 z-10 shadow-elegant">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-accent" />
+                <span className="text-sm font-medium">Kategori {step + 1} / {categories.length}</span>
+              </div>
+              <span className="text-xs opacity-75">{completedCount} dari {categories.length} terpilih ({Math.round(progressPercentage)}%)</span>
             </div>
-            <span className="text-xs opacity-75">{completedCount} dari {categories.length} terpilih</span>
-          </div>
-          <div className="h-1.5 bg-primary-foreground/20 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gold transition-smooth"
-              style={{ width: `${((step + 1) / categories.length) * 100}%` }}
-            />
-          </div>
-          <div className="mt-3">
-            <VotingStatusBanner compact />
+            <div className="h-1.5 bg-primary-foreground/20 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gold transition-smooth"
+                style={{ width: `${progressPercentage}%` }}
+              />
+            </div>
+            <div className="mt-3">
+              <VotingStatusBanner compact />
+            </div>
           </div>
         </div>
-      </div>
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="text-center mb-8 animate-fade-up">
