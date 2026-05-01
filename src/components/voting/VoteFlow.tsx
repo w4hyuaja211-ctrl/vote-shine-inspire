@@ -134,6 +134,9 @@ export default function VoteFlow({ code, onDone }: Props) {
               style={{ width: `${((step + 1) / categories.length) * 100}%` }}
             />
           </div>
+          <div className="mt-3">
+            <VotingStatusBanner compact />
+          </div>
         </div>
       </div>
 
