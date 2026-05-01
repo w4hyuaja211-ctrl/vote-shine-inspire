@@ -4,17 +4,28 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Sparkles, Award, ShieldCheck, ArrowRight } from "lucide-react";
+import { Sparkles, Award, ShieldCheck, ArrowRight, BarChart3 } from "lucide-react";
 import heroImg from "@/assets/hero.jpg";
 import VoteFlow from "@/components/voting/VoteFlow";
+import VotingStatusBanner from "@/components/VotingStatusBanner";
+import { useVotingStatus } from "@/hooks/use-voting-status";
 
 const Index = () => {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [tokenId, setTokenId] = useState<string | null>(null);
   const [activeCode, setActiveCode] = useState<string>("");
+  const status = useVotingStatus();
 
   const handleStart = async () => {
+    if (status.phase === "before") {
+      toast.error("Voting belum dibuka");
+      return;
+    }
+    if (status.phase === "closed") {
+      toast.error("Voting sudah ditutup");
+      return;
+    }
     const trimmed = code.trim().toUpperCase();
     if (trimmed.length < 4) {
       toast.error("Masukkan kode voting Anda");
