@@ -179,9 +179,14 @@ const Index = () => {
             <p className="font-medium">SMA Muhammadiyah 1 Palembang</p>
             <p className="opacity-80">Anugerah Guru & Karyawan Ter-Inspiratif · Hardiknas 2026</p>
           </div>
-          <Link to="/admin" className="inline-flex items-center gap-2 hover:text-accent transition-smooth">
-            <ShieldCheck className="w-4 h-4" /> Panel Admin
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link to="/hasil" className="inline-flex items-center gap-2 hover:text-accent transition-smooth">
+              <BarChart3 className="w-4 h-4" /> Hasil Voting
+            </Link>
+            <Link to="/admin" className="inline-flex items-center gap-2 hover:text-accent transition-smooth">
+              <ShieldCheck className="w-4 h-4" /> Panel Admin
+            </Link>
+          </div>
         </div>
       </footer>
     </div>
