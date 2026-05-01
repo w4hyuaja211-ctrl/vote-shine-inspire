@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Check, ChevronLeft, ChevronRight, Award, Sparkles, User } from "lucide-react";
+import VotingStatusBanner from "@/components/VotingStatusBanner";
+import { useVotingStatus } from "@/hooks/use-voting-status";
 
 interface Category { id: string; name: string; description: string | null; display_order: number; }
 interface Candidate { id: string; name: string; role_type: string; photo_url: string | null; }
@@ -17,6 +19,7 @@ export default function VoteFlow({ code, onDone }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [search, setSearch] = useState("");
+  const status = useVotingStatus();
 
   useEffect(() => {
     (async () => {
@@ -54,6 +57,14 @@ export default function VoteFlow({ code, onDone }: Props) {
   };
 
   const submit = async () => {
+    if (status.phase === "closed") {
+      toast.error("Voting sudah ditutup");
+      return;
+    }
+    if (status.phase === "before") {
+      toast.error("Voting belum dibuka");
+      return;
+    }
     if (Object.keys(selections).length !== categories.length) {
       toast.error("Lengkapi semua kategori dulu");
       return;
@@ -123,6 +134,9 @@ export default function VoteFlow({ code, onDone }: Props) {
               style={{ width: `${((step + 1) / categories.length) * 100}%` }}
             />
           </div>
+          <div className="mt-3">
+            <VotingStatusBanner compact />
+          </div>
         </div>
       </div>
 
@@ -177,7 +191,7 @@ export default function VoteFlow({ code, onDone }: Props) {
                       <Check className="w-4 h-4" strokeWidth={3} />
                     </div>
                   )}
-                  <div className="aspect-square rounded-lg bg-muted overflow-hidden mb-3 flex items-center justify-center">
+                  <div className="aspect-[9/16] rounded-lg bg-muted overflow-hidden mb-3 flex items-center justify-center">
                     {c.photo_url ? (
                       <img src={c.photo_url} alt={c.name} className="w-full h-full object-cover" loading="lazy" />
                     ) : (

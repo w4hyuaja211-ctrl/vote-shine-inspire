@@ -8,6 +8,7 @@ import CandidatesManager from "@/components/admin/CandidatesManager";
 import TokensManager from "@/components/admin/TokensManager";
 import ResultsView from "@/components/admin/ResultsView";
 import VotersView from "@/components/admin/VotersView";
+import ScheduleSettings from "@/components/admin/ScheduleSettings";
 
 async function checkAdminRole() {
   const { data, error } = await (supabase as any).rpc("current_user_admin_status");
@@ -112,11 +113,13 @@ export default function AdminDashboard() {
             <TabsTrigger value="voters">Rekap Pemilih</TabsTrigger>
             <TabsTrigger value="candidates">Nominasi</TabsTrigger>
             <TabsTrigger value="tokens">Kode Voting</TabsTrigger>
+            <TabsTrigger value="schedule">Jadwal</TabsTrigger>
           </TabsList>
           <TabsContent value="results"><ResultsView /></TabsContent>
           <TabsContent value="voters"><VotersView /></TabsContent>
           <TabsContent value="candidates"><CandidatesManager /></TabsContent>
           <TabsContent value="tokens"><TokensManager /></TabsContent>
+          <TabsContent value="schedule"><ScheduleSettings /></TabsContent>
         </Tabs>
       </main>
     </div>

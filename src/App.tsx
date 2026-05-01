@@ -7,6 +7,7 @@ import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AdminAuth from "./pages/AdminAuth.tsx";
 import AdminDashboard from "./pages/AdminDashboard.tsx";
+import Results from "./pages/Results.tsx";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/admin/auth" element={<AdminAuth />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/hasil" element={<Results />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

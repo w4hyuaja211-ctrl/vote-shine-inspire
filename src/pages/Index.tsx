@@ -4,17 +4,28 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Sparkles, Award, ShieldCheck, ArrowRight } from "lucide-react";
+import { Sparkles, Award, ShieldCheck, ArrowRight, BarChart3 } from "lucide-react";
 import heroImg from "@/assets/hero.jpg";
 import VoteFlow from "@/components/voting/VoteFlow";
+import VotingStatusBanner from "@/components/VotingStatusBanner";
+import { useVotingStatus } from "@/hooks/use-voting-status";
 
 const Index = () => {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [tokenId, setTokenId] = useState<string | null>(null);
   const [activeCode, setActiveCode] = useState<string>("");
+  const status = useVotingStatus();
 
   const handleStart = async () => {
+    if (status.phase === "before") {
+      toast.error("Voting belum dibuka");
+      return;
+    }
+    if (status.phase === "closed") {
+      toast.error("Voting sudah ditutup");
+      return;
+    }
     const trimmed = code.trim().toUpperCase();
     if (trimmed.length < 4) {
       toast.error("Masukkan kode voting Anda");
@@ -66,6 +77,9 @@ const Index = () => {
           </p>
 
           <div id="kode-voting" className="max-w-md mx-auto bg-card/95 backdrop-blur p-4 sm:p-6 rounded-2xl shadow-elegant animate-fade-up scroll-mt-20">
+            <div className="mb-3 text-left">
+              <VotingStatusBanner />
+            </div>
             <label htmlFor="voting-code" className="text-sm font-semibold text-card-foreground block mb-2 text-left">
               Masukkan Kode Voting Anda
             </label>
@@ -165,9 +179,14 @@ const Index = () => {
             <p className="font-medium">SMA Muhammadiyah 1 Palembang</p>
             <p className="opacity-80">Anugerah Guru & Karyawan Ter-Inspiratif · Hardiknas 2026</p>
           </div>
-          <Link to="/admin" className="inline-flex items-center gap-2 hover:text-accent transition-smooth">
-            <ShieldCheck className="w-4 h-4" /> Panel Admin
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link to="/hasil" className="inline-flex items-center gap-2 hover:text-accent transition-smooth">
+              <BarChart3 className="w-4 h-4" /> Hasil Voting
+            </Link>
+            <Link to="/admin" className="inline-flex items-center gap-2 hover:text-accent transition-smooth">
+              <ShieldCheck className="w-4 h-4" /> Panel Admin
+            </Link>
+          </div>
         </div>
       </footer>
     </div>
