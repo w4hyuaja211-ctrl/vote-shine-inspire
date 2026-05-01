@@ -162,6 +162,30 @@ export type Database = {
           },
         ]
       }
+      voting_settings: {
+        Row: {
+          ends_at: string | null
+          id: string
+          results_public: boolean
+          starts_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          ends_at?: string | null
+          id?: string
+          results_public?: boolean
+          starts_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ends_at?: string | null
+          id?: string
+          results_public?: boolean
+          starts_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -182,6 +206,19 @@ export type Database = {
         Returns: boolean
       }
       is_current_user_admin: { Args: never; Returns: boolean }
+      public_results: {
+        Args: never
+        Returns: {
+          candidate_id: string
+          candidate_name: string
+          category_id: string
+          category_name: string
+          category_order: number
+          photo_url: string
+          role_type: string
+          votes: number
+        }[]
+      }
       submit_votes: { Args: { _code: string; _votes: Json }; Returns: Json }
       validate_token: {
         Args: { _code: string }
