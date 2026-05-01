@@ -19,6 +19,7 @@ export default function VoteFlow({ code, onDone }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [search, setSearch] = useState("");
+  const status = useVotingStatus();
 
   useEffect(() => {
     (async () => {
