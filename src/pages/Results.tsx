@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Award, Trophy, RefreshCw, ArrowLeft, Crown, User } from "lucide-react";
 import VotingStatusBanner from "@/components/VotingStatusBanner";
+import { Button } from "@/components/ui/button";
 
 interface Row {
   category_id: string;
@@ -25,12 +26,26 @@ interface CategoryGroup {
 
 const REFRESH_MS = 10000;
 
+async function checkAdminRole() {
+  const { data, error } = await (supabase as any).rpc("current_user_admin_status");
+
+  if (error) return { isAdmin: false, email: "", error: error.message };
+
+  const row = Array.isArray(data) ? data[0] : data;
+  return { isAdmin: Boolean(row?.is_admin), email: row?.user_email || "", error: "" };
+}
+
 export default function Results() {
+  const nav = useNavigate();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [error, setError] = useState("");
+  const [checking, setChecking] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [email, setEmail] = useState("");
+  const [accessError, setAccessError] = useState("");
   const timerRef = useRef<number | null>(null);
 
   const load = async (silent = false) => {
@@ -47,11 +62,77 @@ export default function Results() {
     setRefreshing(false);
   };
 
+  const logout = async () => {
+    await supabase.auth.signOut();
+    nav("/admin/auth", { replace: true });
+  };
+
   useEffect(() => {
-    load();
-    timerRef.current = window.setInterval(() => load(true), REFRESH_MS);
+    let mounted = true;
+
+    const check = async (session: any) => {
+      if (!session) {
+        nav("/admin/auth", { replace: true });
+        return;
+      }
+      const { isAdmin: hasAdminAccess, email: accountEmail, error } = await checkAdminRole();
+      if (!mounted) return;
+      setEmail(accountEmail || session.user.email || "");
+      setIsAdmin(hasAdminAccess);
+      setAccessError(error);
+      setChecking(false);
+    };
+
+    supabase.auth.getSession().then(({ data }) => check(data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      if (!session) nav("/admin/auth", { replace: true });
+    });
+
+    return () => { mounted = false; sub.subscription.unsubscribe(); };
+  }, [nav]);
+
+  useEffect(() => {
+    if (!checking && isAdmin) {
+      load();
+      timerRef.current = window.setInterval(() => load(true), REFRESH_MS);
+    }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, []);
+  }, [checking, isAdmin]);
+
+  if (checking) {
+    return <div className="min-h-screen flex items-center justify-center bg-background">Memeriksa akses...</div>;
+  }
+
+  if (accessError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="max-w-md text-center bg-card p-8 rounded-2xl shadow-elegant border border-border">
+          <h2 className="font-display text-3xl mb-3">Sedang Memeriksa Ulang</h2>
+          <p className="text-muted-foreground mb-6">
+            Pemeriksaan admin gagal. Silakan muat ulang halaman ini atau login ulang.
+          </p>
+          <Button onClick={() => window.location.reload()} variant="hero">Muat Ulang</Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="max-w-md text-center bg-card p-8 rounded-2xl shadow-elegant border border-border">
+          <h2 className="font-display text-3xl mb-3">Akses Ditolak</h2>
+          <p className="text-muted-foreground mb-2">
+            Hasil voting hanya bisa dilihat oleh admin.
+          </p>
+          <p className="text-xs text-muted-foreground mb-6">
+            Silakan login sebagai admin melalui panel admin.
+          </p>
+          <Button onClick={() => nav("/admin/auth")} variant="hero">Login Admin</Button>
+        </div>
+      </div>
+    );
+  }
 
   // Group by category
   const groups: CategoryGroup[] = (() => {
@@ -83,9 +164,12 @@ export default function Results() {
       <header className="bg-hero text-primary-foreground shadow-elegant sticky top-0 z-10">
         <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between gap-3">
-            <Link to="/" className="inline-flex items-center gap-1.5 text-xs sm:text-sm opacity-90 hover:opacity-100">
-              <ArrowLeft className="w-4 h-4" /> Kembali
-            </Link>
+            <div className="flex items-center gap-3">
+              <Button variant="outline" size="sm" onClick={() => nav("/admin")} className="w-auto bg-transparent border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
+                <ArrowLeft className="w-4 h-4 mr-1" /> Kembali ke Admin
+              </Button>
+              <div className="text-xs opacity-80">{email}</div>
+            </div>
             <div className="flex items-center gap-1.5 text-xs sm:text-sm">
               <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
               <span className="opacity-80">
