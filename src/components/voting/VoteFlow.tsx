@@ -67,17 +67,57 @@ export default function VoteFlow({ code, onDone }: Props) {
     setConfirmDialogOpen(true);
   };
 
-  const confirmSelection = () => {
+  const confirmSelection = async () => {
     if (!currentCat || !pendingCandidate) return;
-    setSelections((s) => ({ ...s, [currentCat.id]: pendingCandidate.id }));
+    
+    const updatedSelections = { ...selections, [currentCat.id]: pendingCandidate.id };
+    setSelections(updatedSelections);
     setConfirmDialogOpen(false);
     setPendingCandidate(null);
-    if (step < categories.length - 1) {
+    
+    const isLastCategory = step === categories.length - 1;
+    const isComplete = Object.keys(updatedSelections).length === categories.length;
+    
+    if (isLastCategory && isComplete) {
+      await submitWithSelections(updatedSelections);
+    } else if (step < categories.length - 1) {
       setTimeout(() => {
         setStep(step + 1);
         setSearch("");
       }, 300);
     }
+  };
+
+  const submitWithSelections = async (currentSelections: Record<string, string>) => {
+    if (status.phase === "closed") {
+      toast.error("Voting sudah ditutup");
+      return;
+    }
+    if (status.phase === "before") {
+      toast.error("Voting belum dibuka");
+      return;
+    }
+    if (Object.keys(currentSelections).length !== categories.length) {
+      toast.error("Lengkapi semua kategori dulu");
+      return;
+    }
+    setSubmitting(true);
+    const payload = categories.map((c) => ({ category_id: c.id, candidate_id: currentSelections[c.id] }));
+    const deviceType = getDeviceType();
+    const userAgent = navigator.userAgent;
+    
+    const { data, error } = await supabase.rpc("submit_votes", { 
+      _code: code, 
+      _votes: payload,
+      _device_type: deviceType,
+      _user_agent: userAgent
+    });
+    setSubmitting(false);
+    if (error || !(data as any)?.success) {
+      toast.error((data as any)?.error || "Gagal mengirim suara");
+      return;
+    }
+    setDone(true);
   };
 
   const next = () => {
@@ -92,28 +132,15 @@ export default function VoteFlow({ code, onDone }: Props) {
     }
   };
 
+  const getDeviceType = () => {
+    const ua = navigator.userAgent;
+    if (/tablet|ipad|playbook|silk/i.test(ua)) return "Tablet";
+    if (/mobile|iphone|ipod|android|blackberry|opera mini|iemobile/i.test(ua)) return "Mobile";
+    return "Desktop";
+  };
+
   const submit = async () => {
-    if (status.phase === "closed") {
-      toast.error("Voting sudah ditutup");
-      return;
-    }
-    if (status.phase === "before") {
-      toast.error("Voting belum dibuka");
-      return;
-    }
-    if (Object.keys(selections).length !== categories.length) {
-      toast.error("Lengkapi semua kategori dulu");
-      return;
-    }
-    setSubmitting(true);
-    const payload = categories.map((c) => ({ category_id: c.id, candidate_id: selections[c.id] }));
-    const { data, error } = await supabase.rpc("submit_votes", { _code: code, _votes: payload });
-    setSubmitting(false);
-    if (error || !(data as any)?.success) {
-      toast.error((data as any)?.error || "Gagal mengirim suara");
-      return;
-    }
-    setDone(true);
+    await submitWithSelections(selections);
   };
 
   if (loading) {
