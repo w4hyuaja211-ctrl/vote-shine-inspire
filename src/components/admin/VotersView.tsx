@@ -110,12 +110,120 @@ export default function VotersView() {
 
   const usedCount = tokens.filter((t) => t.used).length;
 
+  // Group tokens by label
+  const labelGroups = new Map<string | null, { total: number; used: number }>();
+  tokens.forEach(t => {
+    const key = t.label || null;
+    if (!labelGroups.has(key)) {
+      labelGroups.set(key, { total: 0, used: 0 });
+    }
+    const group = labelGroups.get(key)!;
+    group.total += 1;
+    if (t.used) group.used += 1;
+  });
+
+  // Group tokens by device_type
+  const deviceGroups = new Map<string | null, { total: number; used: number }>();
+  tokens.forEach(t => {
+    const key = t.device_type || null;
+    if (!deviceGroups.has(key)) {
+      deviceGroups.set(key, { total: 0, used: 0 });
+    }
+    const group = deviceGroups.get(key)!;
+    group.total += 1;
+    if (t.used) group.used += 1;
+  });
+
+  const totalTokens = tokens.length;
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Stat label="Total Kode" value={tokens.length} />
         <Stat label="Sudah Memilih" value={usedCount} accent />
         <Stat label="Belum Memilih" value={tokens.length - usedCount} />
+      </div>
+
+      {/* Label grouping with percentages */}
+      <div className="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-soft">
+        <h3 className="font-display text-xl mb-4">Pengelompokan Berdasarkan Label</h3>
+        <div className="space-y-3">
+          {Array.from(labelGroups.entries()).sort((a, b) => {
+            if (a[0] === null) return 1;
+            if (b[0] === null) return -1;
+            return (a[0] || "").localeCompare(b[0] || "");
+          }).map(([label, { total, used }]) => {
+            const percentage = totalTokens > 0 ? Math.round((total / totalTokens) * 100) : 0;
+            const usedPercentage = total > 0 ? Math.round((used / total) * 100) : 0;
+            return (
+              <div key={label || "no-label"} className="bg-background rounded-lg border border-border p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-sm">
+                    {label || <span className="text-muted-foreground italic">Tanpa Label</span>}
+                  </span>
+                  <span className="text-xs font-mono text-muted-foreground">
+                    {percentage}% dari total
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <div className="h-2 bg-muted rounded-full overflow-hidden mb-1">
+                      <div
+                        className="h-full bg-gold transition-all duration-700"
+                        style={{ width: `${usedPercentage}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>{used} / {total} sudah memilih</span>
+                      <span>{usedPercentage}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Device type grouping with percentages */}
+      <div className="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-soft">
+        <h3 className="font-display text-xl mb-4">Pengelompokan Berdasarkan Perangkat</h3>
+        <div className="space-y-3">
+          {Array.from(deviceGroups.entries()).sort((a, b) => {
+            if (a[0] === null) return 1;
+            if (b[0] === null) return -1;
+            return (a[0] || "").localeCompare(b[0] || "");
+          }).map(([device, { total, used }]) => {
+            const percentage = totalTokens > 0 ? Math.round((total / totalTokens) * 100) : 0;
+            const usedPercentage = total > 0 ? Math.round((used / total) * 100) : 0;
+            return (
+              <div key={device || "no-device"} className="bg-background rounded-lg border border-border p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-sm">
+                    {device || <span className="text-muted-foreground italic">Tidak Diketahui</span>}
+                  </span>
+                  <span className="text-xs font-mono text-muted-foreground">
+                    {percentage}% dari total
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <div className="h-2 bg-muted rounded-full overflow-hidden mb-1">
+                      <div
+                        className="h-full bg-blue-500 transition-all duration-700"
+                        style={{ width: `${usedPercentage}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>{used} / {total} sudah memilih</span>
+                      <span>{usedPercentage}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-2">
