@@ -38,6 +38,7 @@ const REFRESH_MS = 10000;
 
 export default function ResultsView() {
   const [groups, setGroups] = useState<CategoryGroup[]>([]);
+  const [labelStats, setLabelStats] = useState<{ label: string; count: number; percentage: number }[]>([]);
   const [tokensUsed, setTokensUsed] = useState(0);
   const [totalTokens, setTotalTokens] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -50,7 +51,7 @@ export default function ResultsView() {
     const [cats, cands, tokens] = await Promise.all([
       supabase.from("categories").select("id, name, display_order").order("display_order"),
       supabase.from("candidates").select("id, name, role_type, photo_url"),
-      supabase.from("vote_tokens").select("used"),
+      supabase.from("vote_tokens").select("used, label"),
     ]);
 
     // Fetch all votes with pagination
@@ -133,7 +134,25 @@ export default function ResultsView() {
     });
 
     setGroups(newGroups);
-    setTokensUsed((tokens.data || []).filter((t) => t.used).length);
+
+    // Calculate label stats
+    const usedTokens = (tokens.data || []).filter(t => t.used);
+    const labelMap = new Map<string, number>();
+    usedTokens.forEach(t => {
+      const label = t.label || "Tanpa Label";
+      labelMap.set(label, (labelMap.get(label) || 0) + 1);
+    });
+
+    const stats = Array.from(labelMap.entries())
+      .map(([label, count]) => ({
+        label,
+        count,
+        percentage: usedTokens.length > 0 ? (count / usedTokens.length) * 100 : 0
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    setLabelStats(stats);
+    setTokensUsed(usedTokens.length);
     setTotalTokens((tokens.data || []).length);
     setLoading(false);
     setRefreshing(false);
@@ -165,6 +184,34 @@ export default function ResultsView() {
         <Stat icon={<Medal className="w-5 h-5" />} label="Kategori" value={groups.length} />
         <Stat icon={<User className="w-5 h-5" />} label="Partisipasi" value={`${participationPercentage}%`} />
       </div>
+
+      {labelStats.length > 0 && (
+        <div className="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-soft">
+          <div className="flex items-center gap-2 mb-4">
+            <User className="w-5 h-5 text-accent" />
+            <h3 className="font-display text-xl font-semibold">Demografi Pemilih</h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {labelStats.map((stat) => (
+              <div key={stat.label} className="bg-background rounded-lg p-3 border border-border">
+                <div className="flex justify-between items-baseline mb-2">
+                  <span className="text-sm font-medium truncate">{stat.label}</span>
+                  <span className="text-xs font-mono text-muted-foreground">{stat.count} suara</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-accent transition-all duration-700"
+                      style={{ width: `${stat.percentage}%` }}
+                    />
+                  </div>
+                  <span className="text-xs font-semibold w-9 text-right">{Math.round(stat.percentage)}%</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {groups.map((g, gi) => {
