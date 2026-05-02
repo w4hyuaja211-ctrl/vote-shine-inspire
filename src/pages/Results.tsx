@@ -40,7 +40,9 @@ interface CategoryGroup {
 interface LabelStat {
   label: string;
   count: number;
-  percentage: number;
+  total: number;
+  percentage: number; // Distribution percentage among voters
+  participation: number; // Participation rate within the group
 }
 
 const REFRESH_MS = 10000;
@@ -70,11 +72,41 @@ export default function Results() {
 
   const load = async (silent = false) => {
     if (!silent) setRefreshing(true);
-    const [cats, cands, tokens] = await Promise.all([
+    const [cats, cands] = await Promise.all([
       supabase.from("categories").select("id, name, display_order").order("display_order"),
       supabase.from("candidates").select("id, name, role_type, photo_url"),
-      supabase.from("vote_tokens").select("used, label"),
     ]);
+
+    // Fetch all tokens with pagination
+    const allTokens: any[] = [];
+    let tokenPage = 0;
+    const pageSize = 1000;
+    let hasMoreTokens = true;
+
+    while (hasMoreTokens) {
+      const from = tokenPage * pageSize;
+      const to = from + pageSize - 1;
+      const { data, error } = await supabase
+        .from("vote_tokens")
+        .select("used, label")
+        .range(from, to);
+      
+      if (error) {
+        console.error("Error fetching tokens page:", error);
+        break;
+      }
+      
+      if (data && data.length > 0) {
+        allTokens.push(...data);
+        if (data.length < pageSize) {
+          hasMoreTokens = false;
+        } else {
+          tokenPage++;
+        }
+      } else {
+        hasMoreTokens = false;
+      }
+    }
     
     // Fetch all votes with pagination
     const allVotes: any[] = [];
@@ -152,19 +184,30 @@ export default function Results() {
 
       setGroups(newGroups);
 
-      // Calculate label stats
-      const usedTokens = (tokens.data || []).filter(t => t.used);
-      const labelMap = new Map<string, number>();
-      usedTokens.forEach(t => {
-        const label = t.label || "Tanpa Label";
-        labelMap.set(label, (labelMap.get(label) || 0) + 1);
+      // Calculate label stats accurately from all tokens
+      const labelMap = new Map<string, { used: number, total: number }>();
+      let totalUsed = 0;
+
+      allTokens.forEach(t => {
+        const label = t.label || "Lainnya";
+        if (!labelMap.has(label)) {
+          labelMap.set(label, { used: 0, total: 0 });
+        }
+        const m = labelMap.get(label)!;
+        m.total += 1;
+        if (t.used) {
+          m.used += 1;
+          totalUsed += 1;
+        }
       });
 
       const stats: LabelStat[] = Array.from(labelMap.entries())
-        .map(([label, count]) => ({
+        .map(([label, data]) => ({
           label,
-          count,
-          percentage: usedTokens.length > 0 ? (count / usedTokens.length) * 100 : 0
+          count: data.used,
+          total: data.total,
+          percentage: totalUsed > 0 ? (data.used / totalUsed) * 100 : 0,
+          participation: data.total > 0 ? (data.used / data.total) * 100 : 0
         }))
         .sort((a, b) => b.count - a.count);
 
@@ -294,21 +337,47 @@ export default function Results() {
               <User className="w-5 h-5 text-accent" />
               <h2 className="font-display text-xl font-semibold">Demografi Pemilih</h2>
             </header>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {labelStats.map((stat) => (
-                <div key={stat.label} className="bg-background rounded-xl p-3 border border-border">
-                  <div className="flex justify-between items-baseline mb-2">
-                    <span className="text-sm font-medium truncate">{stat.label}</span>
-                    <span className="text-xs font-mono text-muted-foreground">{stat.count} suara</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-accent transition-all duration-700"
-                        style={{ width: `${stat.percentage}%` }}
-                      />
+                <div key={stat.label} className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border border-border/50 shadow-soft">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="min-w-0">
+                      <span className="text-sm font-bold block truncate">{stat.label}</span>
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                        {stat.count} / {stat.total} Berpartisipasi
+                      </span>
                     </div>
-                    <span className="text-xs font-semibold w-9 text-right">{Math.round(stat.percentage)}%</span>
+                    <div className="text-right shrink-0">
+                      <span className="text-lg font-display font-bold gradient-text-gold">{Math.round(stat.participation)}%</span>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex justify-between text-[10px] mb-1">
+                        <span className="text-muted-foreground">Tingkat Partisipasi</span>
+                        <span className="font-mono">{Math.round(stat.participation)}%</span>
+                      </div>
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-500 transition-all duration-1000 ease-out"
+                          style={{ width: `${stat.participation}%` }}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between text-[10px] mb-1">
+                        <span className="text-muted-foreground">Kontribusi Suara Total</span>
+                        <span className="font-mono">{Math.round(stat.percentage)}%</span>
+                      </div>
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-accent transition-all duration-1000 ease-out"
+                          style={{ width: `${stat.percentage}%` }}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
