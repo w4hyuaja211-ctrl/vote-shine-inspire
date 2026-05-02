@@ -20,8 +20,38 @@ export default function TokensManager() {
   const [filter, setFilter] = useState<"all" | "unused" | "used">("all");
 
   const load = async () => {
-    const { data } = await supabase.from("vote_tokens").select("*").order("created_at", { ascending: false });
-    setTokens(data || []);
+    const allTokens: any[] = [];
+    let page = 0;
+    const pageSize = 1000;
+    let hasMore = true;
+
+    while (hasMore) {
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+      const { data, error } = await supabase
+        .from("vote_tokens")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .range(from, to);
+      
+      if (error) {
+        console.error("Error fetching tokens page:", error);
+        break;
+      }
+      
+      if (data && data.length > 0) {
+        allTokens.push(...data);
+        if (data.length < pageSize) {
+          hasMore = false;
+        } else {
+          page++;
+        }
+      } else {
+        hasMore = false;
+      }
+    }
+
+    setTokens(allTokens);
   };
   useEffect(() => { load(); }, []);
 
