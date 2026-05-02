@@ -37,6 +37,12 @@ interface CategoryGroup {
   totalVotes: number;
 }
 
+interface LabelStat {
+  label: string;
+  count: number;
+  percentage: number;
+}
+
 const REFRESH_MS = 10000;
 
 async function checkAdminRole() {
@@ -51,6 +57,7 @@ async function checkAdminRole() {
 export default function Results() {
   const nav = useNavigate();
   const [groups, setGroups] = useState<CategoryGroup[]>([]);
+  const [labelStats, setLabelStats] = useState<LabelStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -63,9 +70,10 @@ export default function Results() {
 
   const load = async (silent = false) => {
     if (!silent) setRefreshing(true);
-    const [cats, cands] = await Promise.all([
+    const [cats, cands, tokens] = await Promise.all([
       supabase.from("categories").select("id, name, display_order").order("display_order"),
       supabase.from("candidates").select("id, name, role_type, photo_url"),
+      supabase.from("vote_tokens").select("used, label"),
     ]);
     
     // Fetch all votes with pagination
@@ -143,6 +151,24 @@ export default function Results() {
       });
 
       setGroups(newGroups);
+
+      // Calculate label stats
+      const usedTokens = (tokens.data || []).filter(t => t.used);
+      const labelMap = new Map<string, number>();
+      usedTokens.forEach(t => {
+        const label = t.label || "Tanpa Label";
+        labelMap.set(label, (labelMap.get(label) || 0) + 1);
+      });
+
+      const stats: LabelStat[] = Array.from(labelMap.entries())
+        .map(([label, count]) => ({
+          label,
+          count,
+          percentage: usedTokens.length > 0 ? (count / usedTokens.length) * 100 : 0
+        }))
+        .sort((a, b) => b.count - a.count);
+
+      setLabelStats(stats);
       setError("");
       setLastUpdated(new Date());
     }
@@ -261,6 +287,34 @@ export default function Results() {
         <div className="mb-4">
           <VotingStatusBanner />
         </div>
+
+        {labelStats.length > 0 && (
+          <section className="mb-8 bg-card border border-border rounded-2xl p-5 shadow-elegant">
+            <header className="flex items-center gap-2 mb-4">
+              <User className="w-5 h-5 text-accent" />
+              <h2 className="font-display text-xl font-semibold">Demografi Pemilih</h2>
+            </header>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {labelStats.map((stat) => (
+                <div key={stat.label} className="bg-background rounded-xl p-3 border border-border">
+                  <div className="flex justify-between items-baseline mb-2">
+                    <span className="text-sm font-medium truncate">{stat.label}</span>
+                    <span className="text-xs font-mono text-muted-foreground">{stat.count} suara</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-accent transition-all duration-700"
+                        style={{ width: `${stat.percentage}%` }}
+                      />
+                    </div>
+                    <span className="text-xs font-semibold w-9 text-right">{Math.round(stat.percentage)}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {loading ? (
           <p className="text-center py-12 text-muted-foreground">Memuat hasil...</p>
