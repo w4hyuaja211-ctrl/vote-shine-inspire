@@ -20,14 +20,75 @@ export default function VotersView() {
 
   useEffect(() => {
     (async () => {
-      const [t, v, c, cd] = await Promise.all([
-        supabase.from("vote_tokens").select("*").order("created_at", { ascending: false }),
-        supabase.from("votes").select("token_id, category_id, candidate_id").range(0, 1000000),
+      // Fetch all tokens with pagination
+      const allTokens: any[] = [];
+      let tokenPage = 0;
+      const pageSize = 1000;
+      let hasMoreTokens = true;
+
+      while (hasMoreTokens) {
+        const from = tokenPage * pageSize;
+        const to = from + pageSize - 1;
+        const { data, error } = await supabase
+          .from("vote_tokens")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .range(from, to);
+        
+        if (error) {
+          console.error("Error fetching tokens page:", error);
+          break;
+        }
+        
+        if (data && data.length > 0) {
+          allTokens.push(...data);
+          if (data.length < pageSize) {
+            hasMoreTokens = false;
+          } else {
+            tokenPage++;
+          }
+        } else {
+          hasMoreTokens = false;
+        }
+      }
+
+      // Fetch all votes with pagination
+      const allVotes: any[] = [];
+      let votePage = 0;
+      let hasMoreVotes = true;
+
+      while (hasMoreVotes) {
+        const from = votePage * pageSize;
+        const to = from + pageSize - 1;
+        const { data, error } = await supabase
+          .from("votes")
+          .select("token_id, category_id, candidate_id")
+          .range(from, to);
+        
+        if (error) {
+          console.error("Error fetching votes page:", error);
+          break;
+        }
+        
+        if (data && data.length > 0) {
+          allVotes.push(...data);
+          if (data.length < pageSize) {
+            hasMoreVotes = false;
+          } else {
+            votePage++;
+          }
+        } else {
+          hasMoreVotes = false;
+        }
+      }
+
+      const [c, cd] = await Promise.all([
         supabase.from("categories").select("id, name, display_order").order("display_order"),
         supabase.from("candidates").select("id, name"),
       ]);
-      setTokens(t.data || []);
-      setVotes(v.data || []);
+      
+      setTokens(allTokens);
+      setVotes(allVotes);
       setCats(c.data || []);
       setCands(cd.data || []);
       setLoading(false);
