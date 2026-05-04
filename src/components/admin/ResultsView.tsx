@@ -44,7 +44,10 @@ export default function ResultsView() {
   const [totalTokens, setTotalTokens] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const timerRef = useRef<number | null>(null);
+  const INITIAL_VISIBLE = 5;
+  const toggleExpand = (id: string) => setExpanded((e) => ({ ...e, [id]: !e[id] }));
 
   const load = async (silent = false) => {
     if (!silent) setRefreshing(true);
