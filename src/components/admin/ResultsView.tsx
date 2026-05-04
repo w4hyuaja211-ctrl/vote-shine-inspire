@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Award, Trophy, Medal, User, RefreshCw } from "lucide-react";
 
@@ -43,7 +44,10 @@ export default function ResultsView() {
   const [totalTokens, setTotalTokens] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const timerRef = useRef<number | null>(null);
+  const INITIAL_VISIBLE = 5;
+  const toggleExpand = (id: string) => setExpanded((e) => ({ ...e, [id]: !e[id] }));
 
   const load = async (silent = false) => {
     if (!silent) setRefreshing(true);
@@ -298,7 +302,7 @@ export default function ResultsView() {
                 )}
               </div>
               <div className="space-y-3">
-                {g.items.slice(0, 5).map((item, idx) => {
+                {(expanded[g.id] ? g.items : g.items.slice(0, INITIAL_VISIBLE)).map((item, idx) => {
                   const v = Number(item.votes);
                   const pct = hasVotes ? Math.round((v / g.totalVotes) * 100) : 0;
                   return (
@@ -330,10 +334,17 @@ export default function ResultsView() {
                     </div>
                   );
                 })}
-                {g.items.length > 5 && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    +{g.items.length - 5} kandidat lainnya
-                  </p>
+                {g.items.length > INITIAL_VISIBLE && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => toggleExpand(g.id)}
+                    className="w-full mt-2"
+                  >
+                    {expanded[g.id]
+                      ? "Tampilkan lebih sedikit"
+                      : `Tampilkan semua (+${g.items.length - INITIAL_VISIBLE} kandidat)`}
+                  </Button>
                 )}
               </div>
             </div>
