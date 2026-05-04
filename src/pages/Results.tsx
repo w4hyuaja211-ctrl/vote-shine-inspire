@@ -437,7 +437,7 @@ export default function Results() {
                   )}
 
                   <ol className="space-y-2">
-                    {g.items.slice(0, 5).map((item, idx) => {
+                    {(expanded[g.id] ? g.items : g.items.slice(0, INITIAL_VISIBLE)).map((item, idx) => {
                       const v = Number(item.votes);
                       const pct = hasVotes ? (v / max) * 100 : 0;
                       return (
@@ -459,10 +459,17 @@ export default function Results() {
                       );
                     })}
                   </ol>
-                  {g.items.length > 5 && (
-                    <p className="text-[11px] text-muted-foreground mt-2">
-                      +{g.items.length - 5} kandidat lainnya
-                    </p>
+                  {g.items.length > INITIAL_VISIBLE && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleExpand(g.id)}
+                      className="w-full mt-3"
+                    >
+                      {expanded[g.id]
+                        ? "Tampilkan lebih sedikit"
+                        : `Tampilkan semua (+${g.items.length - INITIAL_VISIBLE} kandidat)`}
+                    </Button>
                   )}
                 </section>
               );
