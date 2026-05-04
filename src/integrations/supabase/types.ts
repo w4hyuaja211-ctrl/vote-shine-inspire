@@ -93,26 +93,35 @@ export type Database = {
         Row: {
           code: string
           created_at: string
+          device_type: string | null
           id: string
+          ip_address: string | null
           label: string | null
           used: boolean
           used_at: string | null
+          user_agent: string | null
         }
         Insert: {
           code: string
           created_at?: string
+          device_type?: string | null
           id?: string
+          ip_address?: string | null
           label?: string | null
           used?: boolean
           used_at?: string | null
+          user_agent?: string | null
         }
         Update: {
           code?: string
           created_at?: string
+          device_type?: string | null
           id?: string
+          ip_address?: string | null
           label?: string | null
           used?: boolean
           used_at?: string | null
+          user_agent?: string | null
         }
         Relationships: []
       }
@@ -219,7 +228,18 @@ export type Database = {
           votes: number
         }[]
       }
-      submit_votes: { Args: { _code: string; _votes: Json }; Returns: Json }
+      submit_votes:
+        | { Args: { _code: string; _votes: Json }; Returns: Json }
+        | {
+            Args: {
+              _code: string
+              _device_type?: string
+              _ip_address?: string
+              _user_agent?: string
+              _votes: Json
+            }
+            Returns: Json
+          }
       validate_token: {
         Args: { _code: string }
         Returns: {

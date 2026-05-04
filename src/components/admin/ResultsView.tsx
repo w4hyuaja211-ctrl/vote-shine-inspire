@@ -87,7 +87,7 @@ export default function ResultsView() {
     // Fetch all votes with pagination
     const allVotes: any[] = [];
     let page = 0;
-    const pageSize = 1000;
+    const votesPageSize2 = 1000;
     let hasMore = true;
 
     while (hasMore) {
