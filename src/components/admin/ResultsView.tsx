@@ -56,7 +56,7 @@ export default function ResultsView() {
     // Fetch all tokens with pagination
     const allTokens: any[] = [];
     let tokenPage = 0;
-    const pageSize = 1000;
+    const votesPageSize = 1000;
     let hasMoreTokens = true;
 
     while (hasMoreTokens) {
