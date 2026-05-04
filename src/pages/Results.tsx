@@ -68,7 +68,11 @@ export default function Results() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [email, setEmail] = useState("");
   const [accessError, setAccessError] = useState("");
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const timerRef = useRef<number | null>(null);
+
+  const INITIAL_VISIBLE = 5;
+  const toggleExpand = (id: string) => setExpanded((e) => ({ ...e, [id]: !e[id] }));
 
   const load = async (silent = false) => {
     if (!silent) setRefreshing(true);
